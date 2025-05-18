@@ -10,6 +10,70 @@ import Trading from "./components/trading/Trading";
 import Settings from "./components/settings/Settings";
 import ApiSetup from "./components/settings/ApiSetup";
 
+// Create mock electronAPI for web-based testing
+if (!window.electronAPI) {
+  console.log("No electronAPI detected. Using mock implementation for web testing.");
+  window.electronAPI = {
+    saveApiCredentials: async (credentials) => {
+      console.log("Mock saveApiCredentials:", credentials);
+      localStorage.setItem('hyperliquid_credentials', JSON.stringify(credentials));
+      return { success: true };
+    },
+    
+    getApiCredentials: async () => {
+      console.log("Mock getApiCredentials");
+      const stored = localStorage.getItem('hyperliquid_credentials');
+      return stored ? JSON.parse(stored) : { apiKey: null, apiSecret: null };
+    },
+    
+    saveTradingConfig: async (config) => {
+      console.log("Mock saveTradingConfig:", config);
+      localStorage.setItem('hyperliquid_config', JSON.stringify(config));
+      return { success: true };
+    },
+    
+    getTradingConfig: async () => {
+      console.log("Mock getTradingConfig");
+      const stored = localStorage.getItem('hyperliquid_config');
+      return stored ? JSON.parse(stored) : {};
+    },
+    
+    onTradingControl: (callback) => {
+      console.log("Mock onTradingControl setup");
+      window._mockTradingControlCallback = callback;
+    },
+    
+    onOpenSettings: (callback) => {
+      console.log("Mock onOpenSettings setup");
+      window._mockOpenSettingsCallback = callback;
+    },
+    
+    onShowAbout: (callback) => {
+      console.log("Mock onShowAbout setup");
+      window._mockShowAboutCallback = callback;
+    }
+  };
+  
+  // Add mock trigger functions
+  window.triggerTradingControl = (command) => {
+    if (window._mockTradingControlCallback) {
+      window._mockTradingControlCallback(command);
+    }
+  };
+  
+  window.triggerOpenSettings = () => {
+    if (window._mockOpenSettingsCallback) {
+      window._mockOpenSettingsCallback();
+    }
+  };
+  
+  window.triggerShowAbout = () => {
+    if (window._mockShowAboutCallback) {
+      window._mockShowAboutCallback();
+    }
+  };
+}
+
 function App() {
   const [isApiConfigured, setIsApiConfigured] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -61,5 +125,7 @@ function App() {
     </div>
   );
 }
+
+export default App;
 
 export default App;
