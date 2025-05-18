@@ -468,6 +468,76 @@ const Backtesting = () => {
                   <p className="text-lg font-semibold text-red-500">-{results.maxDrawdown.toFixed(2)}%</p>
                 </div>
               </div>
+              
+              {/* Advanced Performance Metrics */}
+              <div className="mt-6 pt-6 border-t border-gray-700">
+                <h3 className="text-lg font-medium mb-4">Advanced Performance Analytics</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="bg-gray-700 p-3 rounded-lg">
+                    <h4 className="text-gray-400 text-xs uppercase tracking-wider">Annualized Return</h4>
+                    <p className={`text-lg font-semibold ${results.totalReturn >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                      {(results.totalReturn * (365 / 30)).toFixed(2)}%
+                    </p>
+                  </div>
+                  <div className="bg-gray-700 p-3 rounded-lg">
+                    <h4 className="text-gray-400 text-xs uppercase tracking-wider">Profit Factor</h4>
+                    <p className="text-lg font-semibold">
+                      {(results.winningTrades * 1.5 / (results.numTrades - results.winningTrades || 1)).toFixed(2)}
+                    </p>
+                  </div>
+                  <div className="bg-gray-700 p-3 rounded-lg">
+                    <h4 className="text-gray-400 text-xs uppercase tracking-wider">Average Trade</h4>
+                    <p className={`text-lg font-semibold ${results.totalPnL / results.numTrades >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                      {formatCurrency(results.totalPnL / results.numTrades)}
+                    </p>
+                  </div>
+                  <div className="bg-gray-700 p-3 rounded-lg">
+                    <h4 className="text-gray-400 text-xs uppercase tracking-wider">Recovery Factor</h4>
+                    <p className="text-lg font-semibold">
+                      {(Math.abs(results.totalReturn) / results.maxDrawdown).toFixed(2)}
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                  <div className="bg-gray-700 p-3 rounded-lg">
+                    <h4 className="text-gray-400 text-xs uppercase tracking-wider">Performance Breakdown</h4>
+                    <div className="mt-2 h-8 bg-gray-800 rounded-full overflow-hidden">
+                      <div className="flex h-full">
+                        <div 
+                          className="bg-green-500" 
+                          style={{ width: `${results.winRate}%` }}
+                          title={`Winning Trades: ${results.winRate.toFixed(1)}%`}
+                        ></div>
+                        <div 
+                          className="bg-red-500" 
+                          style={{ width: `${100 - results.winRate}%` }}
+                          title={`Losing Trades: ${(100 - results.winRate).toFixed(1)}%`}
+                        ></div>
+                      </div>
+                    </div>
+                    <div className="flex justify-between text-xs mt-1">
+                      <span>Winning: {results.winRate.toFixed(1)}%</span>
+                      <span>Losing: {(100 - results.winRate).toFixed(1)}%</span>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-gray-700 p-3 rounded-lg">
+                    <h4 className="text-gray-400 text-xs uppercase tracking-wider">Drawdown Profile</h4>
+                    <div className="mt-2 h-8 bg-gray-800 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-red-500" 
+                        style={{ width: `${(results.maxDrawdown / 20) * 100}%` }}
+                        title={`Max Drawdown: ${results.maxDrawdown.toFixed(2)}%`}
+                      ></div>
+                    </div>
+                    <div className="flex justify-between text-xs mt-1">
+                      <span>Current: {results.maxDrawdown.toFixed(2)}%</span>
+                      <span>Max Allowed: 20.00%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </div>
