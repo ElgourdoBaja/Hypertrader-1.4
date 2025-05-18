@@ -542,7 +542,7 @@ const Backtesting = () => {
             </div>
             
             {/* Add Risk Analysis Component */}
-            <RiskAnalysis results={results} />,
+            <RiskAnalysis results={results} />
           )}
         </div>
         
