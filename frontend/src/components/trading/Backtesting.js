@@ -317,7 +317,7 @@ const Backtesting = () => {
           
           // Set results
           setTimeout(() => {
-            setResults({
+            const resultsData = {
               initialBalance,
               finalBalance: balance,
               totalPnL,
@@ -327,9 +327,20 @@ const Backtesting = () => {
               winRate: (winningTrades / numTrades) * 100,
               sharpeRatio,
               maxDrawdown
-            });
+            };
+            
+            console.log('Setting backtest results:', resultsData);
+            setResults(resultsData);
+            
+            // Force re-render
             setIsLoading(false);
             setIsRunning(false);
+            
+            // Scroll to results section
+            const resultsSection = document.getElementById('backtest-results');
+            if (resultsSection) {
+              resultsSection.scrollIntoView({ behavior: 'smooth' });
+            }
           }, 100); // Small delay to ensure state updates properly
         } else {
           setIsLoading(false);
