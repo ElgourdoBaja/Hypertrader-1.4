@@ -116,6 +116,7 @@ function App() {
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/trading" element={<Trading />} />
                   <Route path="/backtesting" element={<Backtesting />} />
+                  <Route path="/strategies" element={<StrategyManager />} />
                   <Route path="/settings" element={<Settings />} />
                 </Routes>
               </main>
