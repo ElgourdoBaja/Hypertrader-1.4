@@ -213,6 +213,7 @@ const Backtesting = () => {
   const runBacktest = () => {
     setIsLoading(true);
     setIsRunning(true);
+    setResults(null); // Clear previous results
     
     // In a real app, this would call the backend to run the backtest
     // For this demo, we'll simulate a backtest with mock data
@@ -258,10 +259,14 @@ const Backtesting = () => {
             }
           }
           
-          // Set markers on chart
+          // Set markers on chart if series exists
           if (chartRef.current.longMarkerSeries && chartRef.current.shortMarkerSeries) {
-            chartRef.current.longMarkerSeries.setMarkers(longMarkers);
-            chartRef.current.shortMarkerSeries.setMarkers(shortMarkers);
+            try {
+              chartRef.current.longMarkerSeries.setMarkers(longMarkers);
+              chartRef.current.shortMarkerSeries.setMarkers(shortMarkers);
+            } catch (err) {
+              console.error("Error setting markers:", err);
+            }
           }
           
           // Calculate backtest results
@@ -316,34 +321,38 @@ const Backtesting = () => {
           const sharpeRatio = totalReturn > 0 ? 1.5 + Math.random() : 0.5 + Math.random(); // Mock Sharpe ratio
           const maxDrawdown = 5 + Math.random() * 10; // Mock drawdown between 5-15%
           
-          // Set results
+          // Set results and finish loading
+          const finalResults = {
+            initialBalance,
+            finalBalance: balance,
+            totalPnL,
+            totalReturn,
+            numTrades,
+            winningTrades,
+            winRate: (winningTrades / numTrades) * 100,
+            sharpeRatio,
+            maxDrawdown
+          };
+          
+          console.log("Setting backtest results:", finalResults);
+          
+          // Make sure we're not updating state after component unmounts
+          setResults(finalResults);
+          setIsLoading(false);
+          setIsRunning(false);
+          
+          // Force a re-render by updating another state
+          setTimeframe(timeframe);
+          
+          // Scroll to results section
           setTimeout(() => {
-            const resultsData = {
-              initialBalance,
-              finalBalance: balance,
-              totalPnL,
-              totalReturn,
-              numTrades,
-              winningTrades,
-              winRate: (winningTrades / numTrades) * 100,
-              sharpeRatio,
-              maxDrawdown
-            };
-            
-            console.log('Setting backtest results:', resultsData);
-            setResults(resultsData);
-            
-            // Force re-render
-            setIsLoading(false);
-            setIsRunning(false);
-            
-            // Scroll to results section
             const resultsSection = document.getElementById('backtest-results');
             if (resultsSection) {
               resultsSection.scrollIntoView({ behavior: 'smooth' });
             }
-          }, 100); // Small delay to ensure state updates properly
+          }, 100);
         } else {
+          console.error("Chart reference not found");
           setIsLoading(false);
           setIsRunning(false);
         }
