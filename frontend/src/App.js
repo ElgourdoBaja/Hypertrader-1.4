@@ -1,51 +1,62 @@
-import { useEffect } from "react";
-import "./App.css";
+import { useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import axios from "axios";
+import "./App.css";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
-
-const Home = () => {
-  const helloWorldApi = async () => {
-    try {
-      const response = await axios.get(`${API}/`);
-      console.log(response.data.message);
-    } catch (e) {
-      console.error(e, `errored out requesting / api`);
-    }
-  };
-
-  useEffect(() => {
-    helloWorldApi();
-  }, []);
-
-  return (
-    <div>
-      <header className="App-header">
-        <a
-          className="App-link"
-          href="https://emergent.sh"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <img src="https://avatars.githubusercontent.com/in/1201222?s=120&u=2686cf91179bbafbc7a71bfbc43004cf9ae1acea&v=4" />
-        </a>
-        <p className="mt-5">Building something incredible ~!</p>
-      </header>
-    </div>
-  );
-};
+// Components
+import Sidebar from "./components/common/Sidebar";
+import Header from "./components/common/Header";
+import Dashboard from "./components/dashboard/Dashboard";
+import Trading from "./components/trading/Trading";
+import Settings from "./components/settings/Settings";
+import ApiSetup from "./components/settings/ApiSetup";
 
 function App() {
+  const [isApiConfigured, setIsApiConfigured] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  // Check if API is configured on startup
+  useEffect(() => {
+    const checkApiCredentials = async () => {
+      try {
+        // For Electron app
+        if (window.electronAPI) {
+          const credentials = await window.electronAPI.getApiCredentials();
+          setIsApiConfigured(credentials && credentials.apiKey && credentials.apiSecret);
+        }
+      } catch (error) {
+        console.error("Failed to check API credentials:", error);
+        setIsApiConfigured(false);
+      }
+    };
+
+    checkApiCredentials();
+  }, []);
+
+  // Toggle sidebar
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
   return (
-    <div className="App">
+    <div className="App bg-gray-900 text-white min-h-screen">
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Home />}>
-            <Route index element={<Home />} />
-          </Route>
-        </Routes>
+        {isApiConfigured ? (
+          <div className="flex h-screen overflow-hidden">
+            <Sidebar isOpen={sidebarOpen} />
+            <div className="flex flex-col flex-1 overflow-hidden">
+              <Header toggleSidebar={toggleSidebar} />
+              <main className="flex-1 overflow-y-auto p-4">
+                <Routes>
+                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/trading" element={<Trading />} />
+                  <Route path="/settings" element={<Settings />} />
+                </Routes>
+              </main>
+            </div>
+          </div>
+        ) : (
+          <ApiSetup onSetupComplete={() => setIsApiConfigured(true)} />
+        )}
       </BrowserRouter>
     </div>
   );
