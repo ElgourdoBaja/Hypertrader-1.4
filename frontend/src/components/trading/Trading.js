@@ -85,12 +85,16 @@ const Trading = () => {
       volumeSeries.setData(volumeData);
       
       // Save chart instance to ref
-      chartRef.current = chart;
+      chartRef.current = {
+        chart,
+        candlestickSeries,
+        volumeSeries
+      };
       
       // Handle resize
       const handleResize = () => {
         if (chartRef.current && chartContainerRef.current) {
-          chartRef.current.applyOptions({
+          chartRef.current.chart.applyOptions({
             width: chartContainerRef.current.clientWidth,
           });
         }
@@ -101,7 +105,7 @@ const Trading = () => {
       return () => {
         window.removeEventListener('resize', handleResize);
         if (chartRef.current) {
-          chartRef.current.remove();
+          chartRef.current.chart.remove();
           chartRef.current = null;
         }
       };
