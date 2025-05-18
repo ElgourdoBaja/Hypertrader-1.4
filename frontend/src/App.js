@@ -7,6 +7,7 @@ import Sidebar from "./components/common/Sidebar";
 import Header from "./components/common/Header";
 import Dashboard from "./components/dashboard/Dashboard";
 import Trading from "./components/trading/Trading";
+import Backtesting from "./components/trading/Backtesting";
 import Settings from "./components/settings/Settings";
 import ApiSetup from "./components/settings/ApiSetup";
 
@@ -113,6 +114,7 @@ function App() {
                 <Routes>
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/trading" element={<Trading />} />
+                  <Route path="/backtesting" element={<Backtesting />} />
                   <Route path="/settings" element={<Settings />} />
                 </Routes>
               </main>
@@ -125,5 +127,7 @@ function App() {
     </div>
   );
 }
+
+export default App;
 
 export default App;
