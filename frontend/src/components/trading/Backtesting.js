@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createChart } from 'lightweight-charts';
 import { formatCurrency, formatPercent } from '../../utils';
+import RiskAnalysis from './RiskAnalysis';
 
 const Backtesting = () => {
   const [isLoading, setIsLoading] = useState(false);
