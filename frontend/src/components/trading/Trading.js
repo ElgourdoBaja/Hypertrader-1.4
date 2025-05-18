@@ -260,6 +260,13 @@ const Trading = () => {
               </div>
               
               <div>
+                <button 
+                  className="btn btn-primary mr-2"
+                  onClick={() => setShowOrderForm(true)}
+                >
+                  Place Order
+                </button>
+                
                 <button className="btn btn-secondary mr-2">
                   <svg 
                     className="w-5 h-5" 
