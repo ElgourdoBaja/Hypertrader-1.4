@@ -258,8 +258,10 @@ const Backtesting = () => {
           }
           
           // Set markers on chart
-          chartRef.current.longMarkerSeries.setMarkers(longMarkers);
-          chartRef.current.shortMarkerSeries.setMarkers(shortMarkers);
+          if (chartRef.current.longMarkerSeries && chartRef.current.shortMarkerSeries) {
+            chartRef.current.longMarkerSeries.setMarkers(longMarkers);
+            chartRef.current.shortMarkerSeries.setMarkers(shortMarkers);
+          }
           
           // Calculate backtest results
           const initialBalance = 100000;
@@ -314,25 +316,31 @@ const Backtesting = () => {
           const maxDrawdown = 5 + Math.random() * 10; // Mock drawdown between 5-15%
           
           // Set results
-          setResults({
-            initialBalance,
-            finalBalance: balance,
-            totalPnL,
-            totalReturn,
-            numTrades,
-            winningTrades,
-            winRate: (winningTrades / numTrades) * 100,
-            sharpeRatio,
-            maxDrawdown
-          });
+          setTimeout(() => {
+            setResults({
+              initialBalance,
+              finalBalance: balance,
+              totalPnL,
+              totalReturn,
+              numTrades,
+              winningTrades,
+              winRate: (winningTrades / numTrades) * 100,
+              sharpeRatio,
+              maxDrawdown
+            });
+            setIsLoading(false);
+            setIsRunning(false);
+          }, 100); // Small delay to ensure state updates properly
+        } else {
+          setIsLoading(false);
+          setIsRunning(false);
         }
       } catch (error) {
         console.error('Error running backtest:', error);
-      } finally {
         setIsLoading(false);
         setIsRunning(false);
       }
-    }, 2000); // Simulate 2 second processing time
+    }, 1000); // Reduced to 1 second for better user experience
   };
   
   // Handle parameter change
