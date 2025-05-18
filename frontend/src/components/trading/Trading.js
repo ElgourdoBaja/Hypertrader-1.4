@@ -324,6 +324,102 @@ const Trading = () => {
               ))}
             </div>
           </div>
+          
+          {/* Order Book & Trade History */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+            {/* Order Book */}
+            <div className="card">
+              <h3 className="text-lg font-semibold mb-3">Order Book</h3>
+              <div className="grid grid-cols-3 gap-2 mb-2 text-sm text-gray-400">
+                <div>Price (USD)</div>
+                <div>Size</div>
+                <div>Total</div>
+              </div>
+              
+              {/* Sell Orders (Red) */}
+              <div className="max-h-40 overflow-y-auto mb-2">
+                {[...Array(8)].map((_, i) => {
+                  // Generate mock sell orders, descending prices
+                  const basePrice = selectedSymbol === 'BTC-PERP' ? 58000 : 
+                                   selectedSymbol === 'ETH-PERP' ? 3200 : 
+                                   selectedSymbol === 'SOL-PERP' ? 145 : 100;
+                  const price = basePrice * (1 + 0.001 * (8 - i));
+                  const size = 0.1 + Math.random() * 2;
+                  return (
+                    <div key={`sell-${i}`} className="grid grid-cols-3 gap-2 text-sm border-b border-gray-700 py-1">
+                      <div className="text-red-500">${price.toFixed(2)}</div>
+                      <div>{size.toFixed(3)}</div>
+                      <div>${(price * size).toFixed(2)}</div>
+                    </div>
+                  );
+                })}
+              </div>
+              
+              {/* Current Price */}
+              <div className="py-2 border-y border-gray-600 my-1 text-center font-bold">
+                ${selectedSymbol === 'BTC-PERP' ? '58,000.00' : 
+                  selectedSymbol === 'ETH-PERP' ? '3,200.00' : 
+                  selectedSymbol === 'SOL-PERP' ? '145.00' : '100.00'}
+              </div>
+              
+              {/* Buy Orders (Green) */}
+              <div className="max-h-40 overflow-y-auto mt-2">
+                {[...Array(8)].map((_, i) => {
+                  // Generate mock buy orders, ascending prices
+                  const basePrice = selectedSymbol === 'BTC-PERP' ? 58000 : 
+                                   selectedSymbol === 'ETH-PERP' ? 3200 : 
+                                   selectedSymbol === 'SOL-PERP' ? 145 : 100;
+                  const price = basePrice * (1 - 0.001 * (i + 1));
+                  const size = 0.1 + Math.random() * 2;
+                  return (
+                    <div key={`buy-${i}`} className="grid grid-cols-3 gap-2 text-sm border-b border-gray-700 py-1">
+                      <div className="text-green-500">${price.toFixed(2)}</div>
+                      <div>{size.toFixed(3)}</div>
+                      <div>${(price * size).toFixed(2)}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            
+            {/* Trade History */}
+            <div className="card">
+              <h3 className="text-lg font-semibold mb-3">Recent Trades</h3>
+              <div className="grid grid-cols-4 gap-2 mb-2 text-sm text-gray-400">
+                <div>Time</div>
+                <div>Price</div>
+                <div>Size</div>
+                <div>Side</div>
+              </div>
+              
+              <div className="max-h-[340px] overflow-y-auto">
+                {[...Array(15)].map((_, i) => {
+                  // Generate mock trades
+                  const basePrice = selectedSymbol === 'BTC-PERP' ? 58000 : 
+                                   selectedSymbol === 'ETH-PERP' ? 3200 : 
+                                   selectedSymbol === 'SOL-PERP' ? 145 : 100;
+                  const variation = (Math.random() - 0.5) * 0.002; // +/- 0.1%
+                  const price = basePrice * (1 + variation);
+                  const size = 0.05 + Math.random() * 1;
+                  const side = Math.random() > 0.5 ? 'buy' : 'sell';
+                  const time = new Date(Date.now() - i * 30000); // 30 seconds between trades
+                  
+                  return (
+                    <div key={`trade-${i}`} className="grid grid-cols-4 gap-2 text-sm border-b border-gray-700 py-1">
+                      <div>{time.toLocaleTimeString()}</div>
+                      <div className={side === 'buy' ? 'text-green-500' : 'text-red-500'}>
+                        ${price.toFixed(2)}
+                      </div>
+                      <div>{size.toFixed(3)}</div>
+                      <div className={side === 'buy' ? 'text-green-500' : 'text-red-500'}>
+                        {side.toUpperCase()}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
         </div>
         
         {/* Right panel - Strategy Configuration */}
