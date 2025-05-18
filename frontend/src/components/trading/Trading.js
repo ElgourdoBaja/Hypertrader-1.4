@@ -135,19 +135,26 @@ const Trading = () => {
   // Update chart when symbol or timeframe changes
   useEffect(() => {
     if (chartRef.current) {
-      const { candlestickSeries, volumeSeries } = chartRef.current;
-      
-      // Mock data update for demonstration
-      const candleData = generateMockCandleData();
-      candlestickSeries.setData(candleData);
-      
-      const volumeData = candleData.map(candle => ({
-        time: candle.time,
-        value: candle.volume || Math.random() * 10000,
-        color: candle.close >= candle.open ? '#26a69a88' : '#ef535088',
-      }));
-      
-      volumeSeries.setData(volumeData);
+      try {
+        const { candlestickSeries, volumeSeries } = chartRef.current;
+        
+        // Skip if series are null (due to error)
+        if (!candlestickSeries || !volumeSeries) return;
+        
+        // Mock data update for demonstration
+        const candleData = generateMockCandleData();
+        candlestickSeries.setData(candleData);
+        
+        const volumeData = candleData.map(candle => ({
+          time: candle.time,
+          value: candle.volume || Math.random() * 10000,
+          color: candle.close >= candle.open ? '#26a69a88' : '#ef535088',
+        }));
+        
+        volumeSeries.setData(volumeData);
+      } catch (error) {
+        console.error('Error updating chart data:', error);
+      }
     }
   }, [selectedSymbol, timeframe]);
   
