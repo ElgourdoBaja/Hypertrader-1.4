@@ -8,6 +8,7 @@ import Header from "./components/common/Header";
 import Dashboard from "./components/dashboard/Dashboard";
 import Trading from "./components/trading/Trading";
 import Backtesting from "./components/trading/Backtesting";
+import StrategyManager from "./components/trading/StrategyManager";
 import Settings from "./components/settings/Settings";
 import ApiSetup from "./components/settings/ApiSetup";
 
