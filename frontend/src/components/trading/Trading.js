@@ -32,83 +32,103 @@ const Trading = () => {
   // Initialize chart when component mounts
   useEffect(() => {
     if (chartContainerRef.current && !chartRef.current) {
-      // Create chart
-      const chart = createChart(chartContainerRef.current, {
-        layout: {
-          background: { color: '#1e1e1e' },
-          textColor: '#d9d9d9',
-        },
-        grid: {
-          vertLines: { color: '#2e2e2e' },
-          horzLines: { color: '#2e2e2e' },
-        },
-        width: chartContainerRef.current.clientWidth,
-        height: 400,
-        timeScale: {
-          timeVisible: true,
-          secondsVisible: false,
-        },
-      });
-      
-      // Add candlestick series
-      const candlestickSeries = chart.addCandlestickSeries({
-        upColor: '#26a69a',
-        downColor: '#ef5350',
-        borderVisible: false,
-        wickUpColor: '#26a69a',
-        wickDownColor: '#ef5350',
-      });
-      
-      // Mock data for demonstration
-      const candleData = generateMockCandleData();
-      candlestickSeries.setData(candleData);
-      
-      // Add volume series
-      const volumeSeries = chart.addHistogramSeries({
-        color: '#26a69a',
-        priceFormat: {
-          type: 'volume',
-        },
-        priceScaleId: '',
-        scaleMargins: {
-          top: 0.8,
-          bottom: 0,
-        },
-      });
-      
-      const volumeData = candleData.map(candle => ({
-        time: candle.time,
-        value: candle.volume || Math.random() * 10000,
-        color: candle.close >= candle.open ? '#26a69a88' : '#ef535088',
-      }));
-      
-      volumeSeries.setData(volumeData);
-      
-      // Save chart instance to ref
-      chartRef.current = {
-        chart,
-        candlestickSeries,
-        volumeSeries
-      };
-      
-      // Handle resize
-      const handleResize = () => {
-        if (chartRef.current && chartContainerRef.current) {
-          chartRef.current.chart.applyOptions({
-            width: chartContainerRef.current.clientWidth,
-          });
-        }
-      };
-      
-      window.addEventListener('resize', handleResize);
-      
-      return () => {
-        window.removeEventListener('resize', handleResize);
-        if (chartRef.current) {
-          chartRef.current.chart.remove();
-          chartRef.current = null;
-        }
-      };
+      try {
+        // Create chart with locale settings
+        const chart = createChart(chartContainerRef.current, {
+          layout: {
+            background: { color: '#1e1e1e' },
+            textColor: '#d9d9d9',
+          },
+          grid: {
+            vertLines: { color: '#2e2e2e' },
+            horzLines: { color: '#2e2e2e' },
+          },
+          width: chartContainerRef.current.clientWidth,
+          height: 400,
+          timeScale: {
+            timeVisible: true,
+            secondsVisible: false,
+            // Fix locale issue by providing a custom formatter
+            tickMarkFormatter: (time) => {
+              const date = new Date(time * 1000);
+              return date.getUTCHours().toString().padStart(2, '0') + ':' +
+                     date.getUTCMinutes().toString().padStart(2, '0');
+            },
+          },
+          localization: {
+            locale: 'en-US',
+            dateFormat: 'yyyy/MM/dd',
+          },
+        });
+        
+        // Add candlestick series
+        const candlestickSeries = chart.addCandlestickSeries({
+          upColor: '#26a69a',
+          downColor: '#ef5350',
+          borderVisible: false,
+          wickUpColor: '#26a69a',
+          wickDownColor: '#ef5350',
+        });
+        
+        // Mock data for demonstration
+        const candleData = generateMockCandleData();
+        candlestickSeries.setData(candleData);
+        
+        // Add volume series
+        const volumeSeries = chart.addHistogramSeries({
+          color: '#26a69a',
+          priceFormat: {
+            type: 'volume',
+          },
+          priceScaleId: '',
+          scaleMargins: {
+            top: 0.8,
+            bottom: 0,
+          },
+        });
+        
+        const volumeData = candleData.map(candle => ({
+          time: candle.time,
+          value: candle.volume || Math.random() * 10000,
+          color: candle.close >= candle.open ? '#26a69a88' : '#ef535088',
+        }));
+        
+        volumeSeries.setData(volumeData);
+        
+        // Save chart instance to ref
+        chartRef.current = {
+          chart,
+          candlestickSeries,
+          volumeSeries
+        };
+        
+        // Handle resize
+        const handleResize = () => {
+          if (chartRef.current && chartContainerRef.current) {
+            chartRef.current.chart.applyOptions({
+              width: chartContainerRef.current.clientWidth,
+            });
+          }
+        };
+        
+        window.addEventListener('resize', handleResize);
+        
+        return () => {
+          window.removeEventListener('resize', handleResize);
+          if (chartRef.current) {
+            chartRef.current.chart.remove();
+            chartRef.current = null;
+          }
+        };
+      } catch (error) {
+        console.error('Error initializing chart:', error);
+        // Set chartRef to an empty object to prevent further errors
+        chartRef.current = {
+          chart: null,
+          candlestickSeries: { setData: () => {} },
+          volumeSeries: { setData: () => {} }
+        };
+      }
     }
   }, []);
   
