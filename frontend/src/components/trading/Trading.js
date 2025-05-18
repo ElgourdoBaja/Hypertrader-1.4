@@ -439,6 +439,145 @@ const Trading = () => {
           </div>
         </div>
       </div>
+      
+      {/* Order Form Modal */}
+      {showOrderForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">Place Order</h2>
+              <button 
+                onClick={() => setShowOrderForm(false)}
+                className="text-gray-400 hover:text-white"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="mb-4">
+              <label className="label">Symbol</label>
+              <select 
+                value={selectedSymbol}
+                onChange={(e) => setSelectedSymbol(e.target.value)}
+                className="input"
+              >
+                {availableSymbols.map(symbol => (
+                  <option key={symbol} value={symbol}>{symbol}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="mb-4">
+              <label className="label">Order Type</label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  className={`py-2 rounded-md text-center ${
+                    orderType === 'market' 
+                      ? 'bg-blue-600 text-white' 
+                      : 'bg-gray-700 text-gray-300'
+                  }`}
+                  onClick={() => setOrderType('market')}
+                >
+                  Market
+                </button>
+                <button
+                  className={`py-2 rounded-md text-center ${
+                    orderType === 'limit' 
+                      ? 'bg-blue-600 text-white' 
+                      : 'bg-gray-700 text-gray-300'
+                  }`}
+                  onClick={() => setOrderType('limit')}
+                >
+                  Limit
+                </button>
+              </div>
+            </div>
+            
+            <div className="mb-4">
+              <label className="label">Side</label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  className={`py-2 rounded-md text-center ${
+                    orderSide === 'buy' 
+                      ? 'bg-green-600 text-white' 
+                      : 'bg-gray-700 text-gray-300'
+                  }`}
+                  onClick={() => setOrderSide('buy')}
+                >
+                  Buy
+                </button>
+                <button
+                  className={`py-2 rounded-md text-center ${
+                    orderSide === 'sell' 
+                      ? 'bg-red-600 text-white' 
+                      : 'bg-gray-700 text-gray-300'
+                  }`}
+                  onClick={() => setOrderSide('sell')}
+                >
+                  Sell
+                </button>
+              </div>
+            </div>
+            
+            <div className="mb-4">
+              <label className="label">Size</label>
+              <input 
+                type="number" 
+                value={orderSize}
+                onChange={(e) => setOrderSize(parseFloat(e.target.value))}
+                className="input"
+                min="0.001"
+                step="0.001"
+              />
+            </div>
+            
+            {orderType === 'limit' && (
+              <div className="mb-4">
+                <label className="label">Price</label>
+                <input 
+                  type="number" 
+                  value={orderPrice}
+                  onChange={(e) => setOrderPrice(e.target.value)}
+                  className="input"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+            )}
+            
+            {orderStatus && (
+              <div className={`mb-4 p-3 rounded-lg ${
+                orderStatus.includes('Error') ? 'bg-red-900/50 text-red-200' : 'bg-green-900/50 text-green-200'
+              }`}>
+                {orderStatus}
+              </div>
+            )}
+            
+            <div className="grid grid-cols-2 gap-4">
+              <button 
+                onClick={() => setShowOrderForm(false)}
+                className="btn bg-gray-700 text-white hover:bg-gray-600"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => {
+                  setOrderStatus(`${orderSide === 'buy' ? 'Buy' : 'Sell'} ${orderSize} ${selectedSymbol} ${orderType === 'limit' ? 'at ' + orderPrice : ''} order placed successfully!`);
+                  setTimeout(() => {
+                    setShowOrderForm(false);
+                    setOrderStatus('');
+                  }, 2000);
+                }}
+                className={`btn ${orderSide === 'buy' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'} text-white`}
+              >
+                {orderSide === 'buy' ? 'Buy' : 'Sell'} {selectedSymbol}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
