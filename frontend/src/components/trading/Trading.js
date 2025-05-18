@@ -17,6 +17,14 @@ const Trading = () => {
     maxDrawdown: 10 // in percentage
   });
   
+  // Order form state
+  const [orderType, setOrderType] = useState('market'); // 'market', 'limit'
+  const [orderSide, setOrderSide] = useState('buy'); // 'buy', 'sell'
+  const [orderSize, setOrderSize] = useState(0.01);
+  const [orderPrice, setOrderPrice] = useState('');
+  const [orderStatus, setOrderStatus] = useState('');
+  const [showOrderForm, setShowOrderForm] = useState(false);
+  
   const chartContainerRef = useRef(null);
   const chartRef = useRef(null);
   
