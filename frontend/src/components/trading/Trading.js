@@ -115,8 +115,7 @@ const Trading = () => {
   // Update chart when symbol or timeframe changes
   useEffect(() => {
     if (chartRef.current) {
-      const candlestickSeries = chartRef.current.series()[0];
-      const volumeSeries = chartRef.current.series()[1];
+      const { candlestickSeries, volumeSeries } = chartRef.current;
       
       // Mock data update for demonstration
       const candleData = generateMockCandleData();
