@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import NotificationCenter from './NotificationCenter';
 
 const Header = ({ toggleSidebar }) => {
   const [time, setTime] = useState(new Date());
@@ -63,6 +64,9 @@ const Header = ({ toggleSidebar }) => {
         <div className="text-gray-300">
           <span className="font-mono">{time.toLocaleTimeString()}</span>
         </div>
+        
+        {/* Notification Center */}
+        <NotificationCenter />
         
         <button
           onClick={toggleTrading}
