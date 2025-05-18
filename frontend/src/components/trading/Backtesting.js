@@ -540,6 +540,9 @@ const Backtesting = () => {
                 </div>
               </div>
             </div>
+            
+            {/* Add Risk Analysis Component */}
+            <RiskAnalysis results={results} />
           )}
         </div>
         
