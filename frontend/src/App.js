@@ -6,6 +6,7 @@ import "./App.css";
 import Sidebar from "./components/common/Sidebar";
 import Header from "./components/common/Header";
 import Dashboard from "./components/dashboard/Dashboard";
+import PerformanceAnalysis from "./components/dashboard/PerformanceAnalysis";
 import Trading from "./components/trading/Trading";
 import PositionManagement from "./components/trading/PositionManagement";
 import Backtesting from "./components/trading/Backtesting";
