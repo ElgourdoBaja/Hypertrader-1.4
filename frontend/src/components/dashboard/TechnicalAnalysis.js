@@ -650,12 +650,14 @@ const TechnicalAnalysis = () => {
     const newAlerts = [];
     
     // Check for RSI alerts
-    if (rsiData.length > 0) {
+    if (rsiData && rsiData.length > 1) {
       const latestRSI = rsiData[rsiData.length - 1];
       const previousRSI = rsiData[rsiData.length - 2];
       
-      if (previousRSI && latestRSI) {
-        if (previousRSI.value < indicatorParams.rsi.oversold && latestRSI.value > indicatorParams.rsi.oversold) {
+      if (previousRSI && latestRSI && 
+          previousRSI.value !== undefined && latestRSI.value !== undefined) {
+        if (previousRSI.value < indicatorParams.rsi.oversold && 
+            latestRSI.value > indicatorParams.rsi.oversold) {
           newAlerts.push({
             id: `rsi-oversold-${Date.now()}`,
             type: 'bullish',
@@ -663,9 +665,10 @@ const TechnicalAnalysis = () => {
             indicator: 'RSI',
             message: `${selectedSymbol} RSI crossed above oversold level (${indicatorParams.rsi.oversold})`,
             value: latestRSI.value.toFixed(2),
-            time: new Date().toLocaleTimeString(),
+            time: formatTime(new Date()),
           });
-        } else if (previousRSI.value > indicatorParams.rsi.overbought && latestRSI.value < indicatorParams.rsi.overbought) {
+        } else if (previousRSI.value > indicatorParams.rsi.overbought && 
+                   latestRSI.value < indicatorParams.rsi.overbought) {
           newAlerts.push({
             id: `rsi-overbought-${Date.now()}`,
             type: 'bearish',
@@ -673,21 +676,26 @@ const TechnicalAnalysis = () => {
             indicator: 'RSI',
             message: `${selectedSymbol} RSI crossed below overbought level (${indicatorParams.rsi.overbought})`,
             value: latestRSI.value.toFixed(2),
-            time: new Date().toLocaleTimeString(),
+            time: formatTime(new Date()),
           });
         }
       }
     }
     
     // Check for MACD alerts
-    if (macdLineData.length > 0 && signalLineData.length > 0) {
+    if (macdLineData && signalLineData && 
+        macdLineData.length > 1 && signalLineData.length > 1) {
       const latestMACD = macdLineData[macdLineData.length - 1];
       const previousMACD = macdLineData[macdLineData.length - 2];
       const latestSignal = signalLineData[signalLineData.length - 1];
       const previousSignal = signalLineData[signalLineData.length - 2];
       
-      if (previousMACD && latestMACD && previousSignal && latestSignal) {
-        if (previousMACD.value < previousSignal.value && latestMACD.value > latestSignal.value) {
+      if (previousMACD && latestMACD && previousSignal && latestSignal &&
+          previousMACD.value !== undefined && latestMACD.value !== undefined &&
+          previousSignal.value !== undefined && latestSignal.value !== undefined) {
+        
+        if (previousMACD.value < previousSignal.value && 
+            latestMACD.value > latestSignal.value) {
           newAlerts.push({
             id: `macd-cross-${Date.now()}`,
             type: 'bullish',
@@ -695,9 +703,10 @@ const TechnicalAnalysis = () => {
             indicator: 'MACD',
             message: `${selectedSymbol} MACD line crossed above signal line`,
             value: `${latestMACD.value.toFixed(2)} > ${latestSignal.value.toFixed(2)}`,
-            time: new Date().toLocaleTimeString(),
+            time: formatTime(new Date()),
           });
-        } else if (previousMACD.value > previousSignal.value && latestMACD.value < latestSignal.value) {
+        } else if (previousMACD.value > previousSignal.value && 
+                   latestMACD.value < latestSignal.value) {
           newAlerts.push({
             id: `macd-cross-${Date.now()}`,
             type: 'bearish',
@@ -705,14 +714,16 @@ const TechnicalAnalysis = () => {
             indicator: 'MACD',
             message: `${selectedSymbol} MACD line crossed below signal line`,
             value: `${latestMACD.value.toFixed(2)} < ${latestSignal.value.toFixed(2)}`,
-            time: new Date().toLocaleTimeString(),
+            time: formatTime(new Date()),
           });
         }
       }
     }
     
     // Update alerts state, keeping only the latest 10
-    setAlerts(prev => [...newAlerts, ...prev].slice(0, 10));
+    if (newAlerts.length > 0) {
+      setAlerts(prev => [...newAlerts, ...prev].slice(0, 10));
+    }
   };
   
   // Toggle timeframe in multi-timeframe view
