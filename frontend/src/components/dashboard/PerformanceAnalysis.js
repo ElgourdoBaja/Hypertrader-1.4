@@ -360,7 +360,16 @@ const PerformanceAnalysis = () => {
           horzLines: { color: '#2e2e2e' },
         },
         timeScale: {
-          timeVisible: false,
+          timeVisible: true,
+          secondsVisible: false,
+          tickMarkFormatter: (time) => {
+            const date = new Date(time * 1000);
+            return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+          }
+        },
+        localization: {
+          locale: 'en-US',
+          dateFormat: 'MMM yyyy',
         },
         rightPriceScale: {
           autoScale: true,
