@@ -3,6 +3,82 @@ import { createChart, CrosshairMode } from 'lightweight-charts';
 import hyperliquidService from '../../services/hyperliquidService';
 import { formatCurrency, formatPercent } from '../../utils';
 
+// Calculate Relative Strength Index (RSI)
+const calculateRSI = (prices, period = 14) => {
+  if (!prices || prices.length < period + 1) {
+    return [];
+  }
+  
+  const rsi = [];
+  let avgGain = 0;
+  let avgLoss = 0;
+  
+  // Calculate first average gain and loss
+  for (let i = 1; i <= period; i++) {
+    const change = prices[i] - prices[i - 1];
+    if (change >= 0) {
+      avgGain += change;
+    } else {
+      avgLoss += Math.abs(change);
+    }
+  }
+  
+  avgGain /= period;
+  avgLoss /= period;
+  
+  // Calculate first RSI
+  let rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
+  rsi.push(100 - (100 / (1 + rs)));
+  
+  // Calculate rest of RSI values
+  for (let i = period + 1; i < prices.length; i++) {
+    const change = prices[i] - prices[i - 1];
+    let gain = 0;
+    let loss = 0;
+    
+    if (change >= 0) {
+      gain = change;
+    } else {
+      loss = Math.abs(change);
+    }
+    
+    avgGain = ((avgGain * (period - 1)) + gain) / period;
+    avgLoss = ((avgLoss * (period - 1)) + loss) / period;
+    
+    rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
+    rsi.push(100 - (100 / (1 + rs)));
+  }
+  
+  // Pad the beginning with nulls to match the input array length
+  const padding = Array(period).fill(null);
+  return [...padding, ...rsi];
+};
+
+// Calculate Moving Average
+const calculateMA = (prices, period) => {
+  if (!prices || prices.length < period) {
+    return [];
+  }
+  
+  const result = [];
+  
+  // Fill with nulls for the first (period-1) elements
+  for (let i = 0; i < period - 1; i++) {
+    result.push(null);
+  }
+  
+  // Calculate MA for the rest of the array
+  for (let i = period - 1; i < prices.length; i++) {
+    let sum = 0;
+    for (let j = 0; j < period; j++) {
+      sum += prices[i - j];
+    }
+    result.push(sum / period);
+  }
+  
+  return result;
+};
+
 const TechnicalAnalysis = () => {
   const [selectedSymbol, setSelectedSymbol] = useState('BTC-PERP');
   const [timeframe, setTimeframe] = useState('1h');
