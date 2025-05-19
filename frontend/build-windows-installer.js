@@ -1,5 +1,6 @@
 const builder = require('electron-builder');
 const path = require('path');
+const { checkBuildEnvironment } = require('./check-build-env');
 
 // Define the configuration for the Windows build
 const config = {
@@ -48,6 +49,12 @@ if (!fs.existsSync(path.resolve(__dirname, 'LICENSE.txt'))) {
 
 // Build the installer
 async function buildInstaller() {
+  // Check if the environment is suitable for building
+  if (!checkBuildEnvironment() && !process.env.FORCE_BUILD) {
+    console.error('Build environment check failed. Exiting...');
+    process.exit(1);
+  }
+
   console.log('Building Windows installer...');
   
   try {
@@ -70,4 +77,10 @@ async function buildInstaller() {
   }
 }
 
-buildInstaller();
+// If this script is run directly, perform the build
+if (require.main === module) {
+  buildInstaller();
+}
+
+// Export the config and build function for testing
+module.exports = { config, buildInstaller };
