@@ -389,13 +389,20 @@ const TechnicalAnalysis = () => {
       // Update main chart
       chartRefs.current.candleSeries.setData(data.candles);
       
+      // Initialize variables for indicators
+      let rsiData = [];
+      let rsiChartData = [];
+      let macdLineData = [];
+      let signalLineData = [];
+      let histogramData = [];
+      
       try {
         // Calculate and update RSI
         const prices = data.candles.map(candle => candle.close);
-        const rsiData = calculateRSI(prices, indicatorParams.rsi.period);
+        rsiData = calculateRSI(prices, indicatorParams.rsi.period);
         
         // Filter out any null or undefined values
-        const rsiChartData = data.candles.slice(indicatorParams.rsi.period).map((candle, i) => {
+        rsiChartData = data.candles.slice(indicatorParams.rsi.period).map((candle, i) => {
           if (rsiData[i] === null || rsiData[i] === undefined) return null;
           return {
             time: candle.time,
@@ -448,9 +455,9 @@ const TechnicalAnalysis = () => {
         const validHistogram = histogram.filter(val => val !== null);
         
         // Prepare data for chart
-        const macdLineData = [];
-        const signalLineData = [];
-        const histogramData = [];
+        macdLineData = [];
+        signalLineData = [];
+        histogramData = [];
         
         const startIndex = indicatorParams.macd.slowPeriod - 1;
         const signalStartIndex = startIndex + indicatorParams.macd.signalPeriod - 1;
@@ -525,15 +532,7 @@ const TechnicalAnalysis = () => {
       
       // Generate alerts based on indicator values
       try {
-        generateAlerts(
-          data.candles.slice(indicatorParams.rsi.period).map((candle, i) => ({
-            time: candle.time,
-            value: rsiData[i]
-          })),
-          macdLineData,
-          signalLineData,
-          histogramData
-        );
+        generateAlerts(rsiChartData, macdLineData, signalLineData, histogramData);
       } catch (error) {
         console.error('Error generating alerts:', error);
       }
