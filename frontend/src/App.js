@@ -11,6 +11,7 @@ import Trading from "./components/trading/Trading";
 import PositionManagement from "./components/trading/PositionManagement";
 import Backtesting from "./components/trading/Backtesting";
 import StrategyManager from "./components/trading/StrategyManager";
+import StrategyEditor from "./components/trading/StrategyEditor";
 import Settings from "./components/settings/Settings";
 import ApiSetup from "./components/settings/ApiSetup";
 
