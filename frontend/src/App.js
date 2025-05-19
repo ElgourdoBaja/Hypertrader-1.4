@@ -95,6 +95,20 @@ function App() {
         if (window.electronAPI) {
           const credentials = await window.electronAPI.getApiCredentials();
           setIsApiConfigured(credentials && credentials.apiKey && credentials.apiSecret);
+          
+          // Initialize Hyperliquid data service with credentials
+          if (credentials && credentials.apiKey && credentials.apiSecret) {
+            await hyperliquidDataService.initialize({
+              apiKey: credentials.apiKey,
+              apiSecret: credentials.apiSecret,
+              onStatusChange: (status) => {
+                console.log(`Hyperliquid connection status: ${status}`);
+              }
+            });
+            
+            // Connect to WebSocket
+            hyperliquidDataService.connectWebSocket();
+          }
         }
       } catch (error) {
         console.error("Failed to check API credentials:", error);
