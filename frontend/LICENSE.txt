@@ -1,0 +1,5 @@
+Hyperliquid Trader - Cryptocurrency Trading Application
+
+Copyright © 2023
+
+All rights reserved.
