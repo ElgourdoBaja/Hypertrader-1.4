@@ -119,6 +119,7 @@ function App() {
                 <Routes>
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/performance" element={<PerformanceAnalysis />} />
+                  <Route path="/analysis" element={<TechnicalAnalysis />} />
                   <Route path="/trading" element={<Trading />} />
                   <Route path="/positions" element={<PositionManagement />} />
                   <Route path="/backtesting" element={<Backtesting />} />
