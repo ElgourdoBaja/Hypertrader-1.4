@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import NotificationCenter from './NotificationCenter';
+import ConnectionStatus from './ConnectionStatus';
 
 const Header = ({ toggleSidebar }) => {
   const [time, setTime] = useState(new Date());
