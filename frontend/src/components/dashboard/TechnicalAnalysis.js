@@ -413,15 +413,37 @@ const TechnicalAnalysis = () => {
   // Fetch market data and update charts
   const fetchMarketData = async () => {
     try {
-      // In a real app, this would fetch from an API
-      // For this demo, we'll generate mock data
+      // Show loading state
+      setIsLoading(true);
       
-      const data = generateMockMarketData();
+      // Fetch historical candles from the data service
+      let data = { candles: [] };
+      
+      try {
+        const candles = await hyperliquidDataService.getHistoricalCandles(
+          selectedSymbol, 
+          timeframe, 
+          200
+        );
+        
+        if (candles && candles.length > 0) {
+          data.candles = candles;
+        } else {
+          // Fallback to mock data if API returns empty result
+          data.candles = generateMockMarketData().candles;
+        }
+      } catch (error) {
+        console.error('Error fetching historical data:', error);
+        // Fallback to mock data on error
+        data.candles = generateMockMarketData().candles;
+      }
+      
       setMarketData(data);
       
       // Make sure we have chart references
       if (!chartRefs.current.candleSeries) {
         console.error('Chart series not initialized');
+        setIsLoading(false);
         return;
       }
       
