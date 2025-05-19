@@ -63,16 +63,16 @@ const PerformanceAnalysis = () => {
         break;
       case '6M':
         startDate = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000);
-        dataPoints = 180;
+        dataPoints = 90; // Reducing data points to avoid performance issues
         break;
       case '1Y':
         startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
-        dataPoints = 365;
+        dataPoints = 100; // Reducing data points to avoid performance issues
         break;
       case 'ALL':
       default:
         startDate = new Date(now.getTime() - 730 * 24 * 60 * 60 * 1000);
-        dataPoints = 730;
+        dataPoints = 150; // Reducing data points to avoid performance issues
         break;
     }
     
@@ -81,17 +81,22 @@ const PerformanceAnalysis = () => {
     let equity = 100000; // Starting equity
     
     for (let i = 0; i < dataPoints; i++) {
+      // Ensure unique timestamps for each data point
       const date = new Date(startDate.getTime() + i * 24 * 60 * 60 * 1000);
+      const timestamp = Math.floor(date.getTime() / 1000);
       
       // Add some randomness with a slight upward trend
       const dailyChange = (Math.random() - 0.45) * 0.02; // -0.45% to +0.55%
       equity = equity * (1 + dailyChange);
       
       equityData.push({
-        time: Math.floor(date.getTime() / 1000),
+        time: timestamp,
         value: equity
       });
     }
+    
+    // Sort to ensure ascending time order
+    equityData.sort((a, b) => a.time - b.time);
     
     // Generate drawdown data
     const drawdownData = [];
@@ -109,36 +114,36 @@ const PerformanceAnalysis = () => {
     
     // Generate monthly returns
     const monthlyReturns = [];
-    let currentMonth = new Date(startDate).getMonth();
-    let monthStart = startDate;
-    let monthStartEquity = equity;
+    const monthMap = new Map();
     
-    for (let i = 0; i < equityData.length; i++) {
-      const date = new Date(equityData[i].time * 1000);
+    // Group by month
+    for (const dataPoint of equityData) {
+      const date = new Date(dataPoint.time * 1000);
+      const monthKey = `${date.getFullYear()}-${date.getMonth() + 1}`;
       
-      if (date.getMonth() !== currentMonth || i === equityData.length - 1) {
-        const monthEnd = new Date(date);
-        monthEnd.setDate(0); // Last day of previous month
-        
-        const monthReturn = (equityData[i-1].value / monthStartEquity - 1) * 100;
-        
-        monthlyReturns.push({
-          month: new Date(date.getFullYear(), currentMonth, 1),
-          return: monthReturn
+      if (!monthMap.has(monthKey)) {
+        monthMap.set(monthKey, {
+          first: dataPoint,
+          last: dataPoint,
+          month: new Date(date.getFullYear(), date.getMonth(), 1)
         });
-        
-        currentMonth = date.getMonth();
-        monthStart = date;
-        monthStartEquity = equityData[i].value;
+      } else {
+        const current = monthMap.get(monthKey);
+        if (dataPoint.time > current.last.time) {
+          current.last = dataPoint;
+        }
       }
     }
     
-    // Add current month
-    const currentMonthReturn = (equityData[equityData.length - 1].value / monthStartEquity - 1) * 100;
-    monthlyReturns.push({
-      month: new Date(now.getFullYear(), now.getMonth(), 1),
-      return: currentMonthReturn
-    });
+    // Calculate monthly returns
+    for (const [key, data] of monthMap.entries()) {
+      const monthReturn = (data.last.value / data.first.value - 1) * 100;
+      monthlyReturns.push({
+        month: data.month,
+        return: monthReturn,
+        time: Math.floor(data.month.getTime() / 1000)
+      });
+    }
     
     return {
       equityData,
