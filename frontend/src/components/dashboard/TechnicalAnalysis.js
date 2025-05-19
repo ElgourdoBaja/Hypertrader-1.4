@@ -216,10 +216,14 @@ const TechnicalAnalysis = () => {
         borderColor: '#3c3c3c',
         timeVisible: true,
         secondsVisible: false,
+        tickMarkFormatter: (time) => {
+          const date = new Date(time * 1000);
+          return `${date.getUTCHours().toString().padStart(2, '0')}:${date.getUTCMinutes().toString().padStart(2, '0')}`;
+        }
       },
       localization: {
         locale: 'en-US',
-        dateFormat: 'yyyy/MM/dd',
+        dateFormat: 'yyyy/MM/dd'
       },
     });
     
