@@ -4,7 +4,7 @@ import sys
 import time
 from datetime import datetime
 
-class HyperliquidAPITester:
+class HyperTraderAPITester:
     def __init__(self, base_url):
         self.base_url = base_url
         self.tests_run = 0
@@ -27,6 +27,8 @@ class HyperliquidAPITester:
                 response = requests.post(url, json=data, headers=headers)
             elif method == 'PUT':
                 response = requests.put(url, json=data, headers=headers)
+            elif method == 'DELETE':
+                response = requests.delete(url, headers=headers)
             
             success = response.status_code == expected_status
             if success:
@@ -216,15 +218,89 @@ class HyperliquidAPITester:
             "metrics/performance",
             200
         )
+    
+    def test_create_alert(self):
+        """Test creating a price alert"""
+        alert_data = {
+            "symbol": "BTC-PERP",
+            "price": 60000,
+            "condition": "above",
+            "notification_type": "email",
+            "is_active": True
+        }
+        success, response = self.run_test(
+            "Create Price Alert",
+            "POST",
+            "alerts",
+            201,  # Assuming 201 for resource creation
+            data=alert_data
+        )
+        if success:
+            return success, response.get("id")
+        return success, None
+    
+    def test_get_alerts(self):
+        """Test getting all alerts"""
+        return self.run_test(
+            "Get All Alerts",
+            "GET",
+            "alerts",
+            200
+        )
+    
+    def test_update_alert(self, alert_id):
+        """Test updating an alert"""
+        updated_alert = {
+            "id": alert_id,
+            "symbol": "ETH-PERP",
+            "price": 3500,
+            "condition": "below",
+            "notification_type": "app",
+            "is_active": True
+        }
+        return self.run_test(
+            f"Update Alert {alert_id}",
+            "PUT",
+            f"alerts/{alert_id}",
+            200,
+            data=updated_alert
+        )
+    
+    def test_delete_alert(self, alert_id):
+        """Test deleting an alert"""
+        return self.run_test(
+            f"Delete Alert {alert_id}",
+            "DELETE",
+            f"alerts/{alert_id}",
+            200
+        )
+    
+    def test_get_technical_indicators(self, symbol, timeframe):
+        """Test getting technical indicators for a symbol and timeframe"""
+        return self.run_test(
+            f"Get Technical Indicators for {symbol} ({timeframe})",
+            "GET",
+            f"analysis/indicators?symbol={symbol}&timeframe={timeframe}",
+            200
+        )
+    
+    def test_get_chart_data(self, symbol, timeframe):
+        """Test getting chart data for a symbol and timeframe"""
+        return self.run_test(
+            f"Get Chart Data for {symbol} ({timeframe})",
+            "GET",
+            f"analysis/chart?symbol={symbol}&timeframe={timeframe}",
+            200
+        )
 
 def main():
     # Get the backend URL from the frontend .env file
     backend_url = "https://1f60ef82-8f39-47fe-a36a-8b9d402f18b9.preview.emergentagent.com"
     
-    print(f"Testing Hyperliquid API at: {backend_url}")
+    print(f"Testing HyperTrader API at: {backend_url}")
     
     # Setup tester
-    tester = HyperliquidAPITester(backend_url)
+    tester = HyperTraderAPITester(backend_url)
     
     # Run tests
     tester.test_root_endpoint()
@@ -251,6 +327,23 @@ def main():
     tester.test_get_positions()
     tester.test_get_trades()
     tester.test_get_performance_metrics()
+    
+    # Test technical analysis features
+    symbols = ["BTC-PERP", "ETH-PERP", "SOL-PERP"]
+    timeframes = ["1m", "5m", "15m", "1h", "4h", "1d"]
+    
+    # Test chart data and indicators for different symbols and timeframes
+    for symbol in symbols[:2]:  # Test with a subset of symbols
+        for timeframe in timeframes[:3]:  # Test with a subset of timeframes
+            tester.test_get_chart_data(symbol, timeframe)
+            tester.test_get_technical_indicators(symbol, timeframe)
+    
+    # Test alert functionality
+    success, alert_id = tester.test_create_alert()
+    if success and alert_id:
+        tester.test_get_alerts()
+        tester.test_update_alert(alert_id)
+        tester.test_delete_alert(alert_id)
     
     # Print results
     print(f"\n📊 Tests passed: {tester.tests_passed}/{tester.tests_run}")
