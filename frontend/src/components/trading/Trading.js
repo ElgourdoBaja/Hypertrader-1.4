@@ -39,8 +39,28 @@ const Trading = () => {
   
   // Initialize chart when component mounts
   useEffect(() => {
-    if (chartContainerRef.current && !chartRef.current) {
+    // Function to create and initialize the chart
+    const initializeChart = () => {
+      if (!chartContainerRef.current) {
+        console.warn("Chart container not found");
+        return;
+      }
+
       try {
+        // Clear any previous chart instance
+        if (chartRef.current && chartRef.current.chart) {
+          chartRef.current.chart.remove();
+          chartRef.current = null;
+        }
+
+        // Ensure the container has dimensions before creating the chart
+        if (chartContainerRef.current.clientWidth === 0) {
+          console.warn("Chart container has zero width");
+          // Wait for container to be properly sized
+          setTimeout(initializeChart, 100);
+          return;
+        }
+
         // Create chart with locale settings
         const chart = createChart(chartContainerRef.current, {
           layout: {
@@ -110,34 +130,48 @@ const Trading = () => {
           volumeSeries
         };
         
-        // Handle resize
-        const handleResize = () => {
-          if (chartRef.current && chartContainerRef.current) {
-            chartRef.current.chart.applyOptions({
-              width: chartContainerRef.current.clientWidth,
-            });
-          }
-        };
-        
-        window.addEventListener('resize', handleResize);
-        
-        return () => {
-          window.removeEventListener('resize', handleResize);
-          if (chartRef.current) {
-            chartRef.current.chart.remove();
-            chartRef.current = null;
-          }
-        };
+        console.log("Chart successfully initialized");
       } catch (error) {
-        console.error('Error initializing chart:', error);
-        // Set chartRef to an empty object to prevent further errors
+        console.error("Error initializing chart:", error);
+        // Create a placeholder chart reference to avoid null pointer errors
         chartRef.current = {
           chart: null,
           candlestickSeries: { setData: () => {} },
           volumeSeries: { setData: () => {} }
         };
       }
-    }
+    };
+
+    // Initialize the chart
+    initializeChart();
+
+    // Handle resize
+    const handleResize = () => {
+      if (chartRef.current && chartRef.current.chart && chartContainerRef.current) {
+        try {
+          chartRef.current.chart.applyOptions({
+            width: chartContainerRef.current.clientWidth,
+          });
+        } catch (error) {
+          console.error("Error resizing chart:", error);
+        }
+      }
+    };
+    
+    window.addEventListener('resize', handleResize);
+    
+    // Cleanup function
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      if (chartRef.current && chartRef.current.chart) {
+        try {
+          chartRef.current.chart.remove();
+        } catch (error) {
+          console.error("Error removing chart:", error);
+        }
+        chartRef.current = null;
+      }
+    };
   }, []);
   
   // Update chart when symbol or timeframe changes
