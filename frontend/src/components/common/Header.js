@@ -62,6 +62,8 @@ const Header = ({ toggleSidebar }) => {
       </div>
       
       <div className="flex items-center space-x-4">
+        <ConnectionStatus />
+        
         <div className="text-gray-300">
           <span className="font-mono">{time.toLocaleTimeString()}</span>
         </div>
