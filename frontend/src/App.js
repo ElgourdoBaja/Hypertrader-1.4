@@ -116,6 +116,7 @@ function App() {
               <main className="flex-1 overflow-y-auto p-4">
                 <Routes>
                   <Route path="/" element={<Dashboard />} />
+                  <Route path="/performance" element={<PerformanceAnalysis />} />
                   <Route path="/trading" element={<Trading />} />
                   <Route path="/positions" element={<PositionManagement />} />
                   <Route path="/backtesting" element={<Backtesting />} />
