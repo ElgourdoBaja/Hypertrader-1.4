@@ -357,11 +357,20 @@ const PerformanceAnalysis = () => {
       });
       
       // Format monthly returns data for the chart
-      const formattedData = performanceData.monthlyReturns.map(item => ({
-        time: Math.floor(item.month.getTime() / 1000),
-        value: item.return,
-        color: item.return >= 0 ? '#26a69a' : '#ef5350'
-      }));
+      const formattedData = [];
+      
+      // Only use a subset of the monthly returns to avoid data issues
+      const recentMonths = performanceData.monthlyReturns
+        .sort((a, b) => a.time - b.time) // Ensure ascending order
+        .slice(-12); // Get the last 12 months only
+      
+      for (const item of recentMonths) {
+        formattedData.push({
+          time: item.time,
+          value: item.return,
+          color: item.return >= 0 ? '#26a69a' : '#ef5350'
+        });
+      }
       
       series.setData(formattedData);
       
