@@ -3,6 +3,26 @@ import { createChart, CrosshairMode } from 'lightweight-charts';
 import hyperliquidService from '../../services/hyperliquidService';
 import { formatCurrency, formatPercent } from '../../utils';
 
+// Format date
+const formatDate = (dateString) => {
+  try {
+    const date = new Date(dateString);
+    return date.toISOString().slice(0, 10);
+  } catch (error) {
+    return 'Invalid Date';
+  }
+};
+
+// Format time
+const formatTime = (dateString) => {
+  try {
+    const date = new Date(dateString);
+    return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')}`;
+  } catch (error) {
+    return 'Invalid Time';
+  }
+};
+
 // Calculate Relative Strength Index (RSI)
 const calculateRSI = (prices, period = 14) => {
   if (!prices || prices.length < period + 1) {
