@@ -251,6 +251,14 @@ const PerformanceAnalysis = () => {
         timeScale: {
           timeVisible: true,
           secondsVisible: false,
+          tickMarkFormatter: (time) => {
+            const date = new Date(time * 1000);
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          }
+        },
+        localization: {
+          locale: 'en-US',
+          dateFormat: 'MMM dd',
         },
         rightPriceScale: {
           autoScale: true,
