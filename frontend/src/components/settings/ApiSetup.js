@@ -23,7 +23,24 @@ const ApiSetup = ({ onSetupComplete }) => {
       if (window.electronAPI) {
         const result = await window.electronAPI.saveApiCredentials({ apiKey, apiSecret });
         if (result.success) {
-          onSetupComplete();
+          // Initialize Hyperliquid data service with new credentials
+          try {
+            await hyperliquidDataService.initialize({
+              apiKey,
+              apiSecret,
+              onStatusChange: (status) => {
+                console.log(`Hyperliquid connection status: ${status}`);
+              }
+            });
+            
+            // Connect to WebSocket
+            await hyperliquidDataService.connectWebSocket();
+            
+            onSetupComplete();
+          } catch (initError) {
+            console.error('Failed to initialize Hyperliquid service:', initError);
+            setError('Credentials saved but failed to connect to Hyperliquid. Please try again.');
+          }
         } else {
           setError(result.error || 'Failed to save API credentials');
         }
