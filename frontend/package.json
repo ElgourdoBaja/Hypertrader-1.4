@@ -25,7 +25,8 @@
     "eject": "react-scripts eject",
     "electron:dev": "concurrently \"BROWSER=none yarn start\" \"wait-on http://localhost:3000 && electron .\"",
     "electron:build": "yarn build && electron-builder",
-    "electron:start": "electron ."
+    "electron:start": "electron .",
+    "build:windows": "node build-windows-installer.js"
   },
   "browserslist": {
     "production": [
