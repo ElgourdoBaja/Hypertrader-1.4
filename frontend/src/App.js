@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import "./App.css";
 
+// Services
+import hyperliquidDataService from "./services/hyperliquidDataService";
+
 // Components
 import Sidebar from "./components/common/Sidebar";
 import Header from "./components/common/Header";
