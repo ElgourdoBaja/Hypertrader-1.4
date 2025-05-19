@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createChart, CrosshairMode } from 'lightweight-charts';
 import hyperliquidService from '../../services/hyperliquidService';
-import { formatCurrency, formatPercent, calculateRSI, calculateMA } from '../../utils';
+import { formatCurrency, formatPercent } from '../../utils';
 
 const TechnicalAnalysis = () => {
   const [selectedSymbol, setSelectedSymbol] = useState('BTC-PERP');
