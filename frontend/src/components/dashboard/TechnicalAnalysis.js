@@ -63,16 +63,32 @@ const TechnicalAnalysis = () => {
   // Initialize charts when component mounts
   useEffect(() => {
     if (mainChartRef.current && !chartRefs.current.mainChart) {
-      initializeCharts();
+      try {
+        initializeCharts();
+      } catch (error) {
+        console.error('Error initializing charts:', error);
+      }
     }
     
     return () => {
       // Cleanup charts on unmount
       Object.values(chartRefs.current).forEach(chart => {
-        if (chart) {
-          chart.remove();
+        if (chart && typeof chart.remove === 'function') {
+          try {
+            chart.remove();
+          } catch (error) {
+            console.error('Error removing chart:', error);
+          }
         }
       });
+      
+      // Reset chart refs
+      chartRefs.current = {
+        mainChart: null,
+        rsiChart: null,
+        macdChart: null,
+        volumeChart: null
+      };
     };
   }, []);
   
