@@ -668,10 +668,16 @@ const Trading = () => {
               <button 
                 onClick={() => {
                   setOrderStatus(`${orderSide === 'buy' ? 'Buy' : 'Sell'} ${orderSize} ${selectedSymbol} ${orderType === 'limit' ? 'at ' + orderPrice : ''} order placed successfully!`);
+                  
+                  // Close the modal after a short delay
                   setTimeout(() => {
                     setShowOrderForm(false);
-                    setOrderStatus('');
-                  }, 2000);
+                    
+                    // Clear the order status after the modal is closed
+                    setTimeout(() => {
+                      setOrderStatus('');
+                    }, 500);
+                  }, 1500);
                 }}
                 className={`btn ${orderSide === 'buy' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'} text-white`}
               >
