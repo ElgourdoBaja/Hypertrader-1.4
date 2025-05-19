@@ -295,7 +295,7 @@ class HyperTraderAPITester:
 
 def main():
     # Get the backend URL from the frontend .env file
-    backend_url = "https://1f60ef82-8f39-47fe-a36a-8b9d402f18b9.preview.emergentagent.com"
+    backend_url = "https://3a8216d6-a6b4-40be-8df9-f7129ceffad3.preview.emergentagent.com"
     
     print(f"Testing HyperTrader API at: {backend_url}")
     

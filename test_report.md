@@ -8,7 +8,7 @@ This report documents the testing of the enhanced Hyperliquid high-frequency tra
 
 - **Backend**: FastAPI running on port 8001
 - **Frontend**: React application
-- **Public URL**: https://1f60ef82-8f39-47fe-a36a-8b9d402f18b9.preview.emergentagent.com
+- **Public URL**: https://3a8216d6-a6b4-40be-8df9-f7129ceffad3.preview.emergentagent.com
 - **Testing Tools**: Python requests library for API testing, Playwright for UI testing
 
 ## Backend API Testing
