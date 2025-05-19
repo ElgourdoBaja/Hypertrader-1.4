@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createChart, CrosshairMode } from 'lightweight-charts';
-import hyperliquidService from '../../services/hyperliquidService';
+import hyperliquidDataService from '../../services/hyperliquidDataService';
 import { formatCurrency, formatPercent } from '../../utils';
 
 // Format date
