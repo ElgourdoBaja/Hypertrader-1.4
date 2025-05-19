@@ -601,6 +601,8 @@ const TechnicalAnalysis = () => {
       
     } catch (error) {
       console.error('Error fetching market data:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
   
