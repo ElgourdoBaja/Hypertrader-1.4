@@ -178,25 +178,49 @@ const Trading = () => {
   useEffect(() => {
     if (chartRef.current) {
       try {
-        const { candlestickSeries, volumeSeries } = chartRef.current;
+        const { candlestickSeries, volumeSeries, chart } = chartRef.current;
         
         // Skip if series are null (due to error)
-        if (!candlestickSeries || !volumeSeries) return;
+        if (!candlestickSeries || !volumeSeries || !chart) {
+          console.warn("Cannot update chart: chart series not available");
+          return;
+        }
+        
+        console.log(`Updating chart for ${selectedSymbol} with timeframe ${timeframe}`);
         
         // Mock data update for demonstration
         const candleData = generateMockCandleData();
-        candlestickSeries.setData(candleData);
         
-        const volumeData = candleData.map(candle => ({
-          time: candle.time,
-          value: candle.volume || Math.random() * 10000,
-          color: candle.close >= candle.open ? '#26a69a88' : '#ef535088',
-        }));
+        // Make sure we have valid data
+        if (!candleData || !Array.isArray(candleData) || candleData.length === 0) {
+          console.warn("Invalid candle data generated");
+          return;
+        }
         
-        volumeSeries.setData(volumeData);
+        // Update chart data
+        try {
+          candlestickSeries.setData(candleData);
+          
+          const volumeData = candleData.map(candle => ({
+            time: candle.time,
+            value: candle.volume || Math.random() * 10000,
+            color: candle.close >= candle.open ? '#26a69a88' : '#ef535088',
+          }));
+          
+          volumeSeries.setData(volumeData);
+          
+          // Fit the visible range to show all data
+          chart.timeScale().fitContent();
+          
+          console.log("Chart data updated successfully");
+        } catch (err) {
+          console.error("Error updating chart data:", err);
+        }
       } catch (error) {
-        console.error('Error updating chart data:', error);
+        console.error("Error in chart update effect:", error);
       }
+    } else {
+      console.warn("Chart reference not available for update");
     }
   }, [selectedSymbol, timeframe]);
   
