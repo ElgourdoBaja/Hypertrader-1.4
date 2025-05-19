@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import hyperliquidDataService from '../../services/hyperliquidDataService';
 
 const ApiSetup = ({ onSetupComplete }) => {
   const [apiKey, setApiKey] = useState('');
