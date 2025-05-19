@@ -380,128 +380,163 @@ const TechnicalAnalysis = () => {
       const data = generateMockMarketData();
       setMarketData(data);
       
+      // Make sure we have chart references
+      if (!chartRefs.current.candleSeries) {
+        console.error('Chart series not initialized');
+        return;
+      }
+      
       // Update main chart
       chartRefs.current.candleSeries.setData(data.candles);
       
-      // Calculate and update RSI
-      const prices = data.candles.map(candle => candle.close);
-      const rsiData = calculateRSI(prices, indicatorParams.rsi.period);
-      
-      // Filter out any null or undefined values
-      const rsiChartData = data.candles.slice(indicatorParams.rsi.period).map((candle, i) => {
-        if (rsiData[i] === null || rsiData[i] === undefined) return null;
-        return {
-          time: candle.time,
-          value: rsiData[i]
-        };
-      }).filter(item => item !== null);
-      
-      chartRefs.current.rsiSeries.setData(rsiChartData);
-      
-      // Calculate and update MACD
-      const fastEMA = calculateMA(prices, indicatorParams.macd.fastPeriod);
-      const slowEMA = calculateMA(prices, indicatorParams.macd.slowPeriod);
-      
-      // MACD Line = Fast EMA - Slow EMA
-      const macdLine = [];
-      for (let i = 0; i < fastEMA.length; i++) {
-        if (i < indicatorParams.macd.slowPeriod - 1 || fastEMA[i] === null || slowEMA[i] === null) {
-          macdLine.push(null);
-        } else {
-          macdLine.push(fastEMA[i] - slowEMA[i]);
+      try {
+        // Calculate and update RSI
+        const prices = data.candles.map(candle => candle.close);
+        const rsiData = calculateRSI(prices, indicatorParams.rsi.period);
+        
+        // Filter out any null or undefined values
+        const rsiChartData = data.candles.slice(indicatorParams.rsi.period).map((candle, i) => {
+          if (rsiData[i] === null || rsiData[i] === undefined) return null;
+          return {
+            time: candle.time,
+            value: rsiData[i]
+          };
+        }).filter(item => item !== null);
+        
+        if (chartRefs.current.rsiSeries) {
+          chartRefs.current.rsiSeries.setData(rsiChartData);
         }
+      } catch (error) {
+        console.error('Error updating RSI chart:', error);
       }
       
-      // Filter out null values
-      const validMacdLine = macdLine.filter(val => val !== null);
-      
-      // Calculate Signal Line (EMA of MACD Line)
-      const signalLine = calculateMA(validMacdLine, indicatorParams.macd.signalPeriod);
-      
-      // Calculate Histogram (MACD Line - Signal Line)
-      const histogram = [];
-      const signalOffset = indicatorParams.macd.signalPeriod - 1;
-      
-      for (let i = 0; i < validMacdLine.length; i++) {
-        if (i < signalOffset || validMacdLine[i] === null || signalLine[i - signalOffset] === null) {
-          histogram.push(null);
-        } else {
-          histogram.push(validMacdLine[i] - signalLine[i - signalOffset]);
+      try {
+        // Calculate and update MACD
+        const prices = data.candles.map(candle => candle.close);
+        const fastEMA = calculateMA(prices, indicatorParams.macd.fastPeriod);
+        const slowEMA = calculateMA(prices, indicatorParams.macd.slowPeriod);
+        
+        // MACD Line = Fast EMA - Slow EMA
+        const macdLine = [];
+        for (let i = 0; i < fastEMA.length; i++) {
+          if (i < indicatorParams.macd.slowPeriod - 1 || fastEMA[i] === null || slowEMA[i] === null) {
+            macdLine.push(null);
+          } else {
+            macdLine.push(fastEMA[i] - slowEMA[i]);
+          }
         }
+        
+        // Filter out null values
+        const validMacdLine = macdLine.filter(val => val !== null);
+        
+        // Calculate Signal Line (EMA of MACD Line)
+        const signalLine = calculateMA(validMacdLine, indicatorParams.macd.signalPeriod);
+        
+        // Calculate Histogram (MACD Line - Signal Line)
+        const histogram = [];
+        const signalOffset = indicatorParams.macd.signalPeriod - 1;
+        
+        for (let i = 0; i < validMacdLine.length; i++) {
+          if (i < signalOffset || validMacdLine[i] === null || signalLine[i - signalOffset] === null) {
+            histogram.push(null);
+          } else {
+            histogram.push(validMacdLine[i] - signalLine[i - signalOffset]);
+          }
+        }
+        
+        // Filter out null values
+        const validHistogram = histogram.filter(val => val !== null);
+        
+        // Prepare data for chart
+        const macdLineData = [];
+        const signalLineData = [];
+        const histogramData = [];
+        
+        const startIndex = indicatorParams.macd.slowPeriod - 1;
+        const signalStartIndex = startIndex + indicatorParams.macd.signalPeriod - 1;
+        
+        // Ensure we only use valid data points for MACD line
+        for (let i = 0; i < macdLine.length; i++) {
+          if (macdLine[i] === null) continue;
+          
+          const candle = data.candles[i + startIndex];
+          if (!candle) continue;
+          
+          macdLineData.push({
+            time: candle.time,
+            value: macdLine[i]
+          });
+        }
+        
+        // Ensure we only use valid data points for signal line
+        for (let i = 0; i < signalLine.length; i++) {
+          if (signalLine[i] === null) continue;
+          
+          const candle = data.candles[i + signalStartIndex];
+          if (!candle) continue;
+          
+          signalLineData.push({
+            time: candle.time,
+            value: signalLine[i]
+          });
+        }
+        
+        // Ensure we only use valid data points for histogram
+        for (let i = 0; i < validHistogram.length; i++) {
+          const candle = data.candles[i + signalStartIndex];
+          if (!candle) continue;
+          
+          histogramData.push({
+            time: candle.time,
+            value: validHistogram[i],
+            color: validHistogram[i] >= 0 ? '#26a69a' : '#ef5350'
+          });
+        }
+        
+        if (chartRefs.current.macdLineSeries) {
+          chartRefs.current.macdLineSeries.setData(macdLineData);
+        }
+        
+        if (chartRefs.current.macdSignalSeries) {
+          chartRefs.current.macdSignalSeries.setData(signalLineData);
+        }
+        
+        if (chartRefs.current.macdHistogramSeries) {
+          chartRefs.current.macdHistogramSeries.setData(histogramData);
+        }
+      } catch (error) {
+        console.error('Error updating MACD chart:', error);
       }
       
-      // Filter out null values
-      const validHistogram = histogram.filter(val => val !== null);
-      
-      // Prepare data for chart
-      const macdLineData = [];
-      const signalLineData = [];
-      const histogramData = [];
-      
-      const startIndex = indicatorParams.macd.slowPeriod - 1;
-      const signalStartIndex = startIndex + indicatorParams.macd.signalPeriod - 1;
-      
-      // Ensure we only use valid data points for MACD line
-      for (let i = 0; i < macdLine.length; i++) {
-        if (macdLine[i] === null) continue;
-        
-        const candle = data.candles[i + startIndex];
-        if (!candle) continue;
-        
-        macdLineData.push({
+      try {
+        // Update volume chart
+        const volumeData = data.candles.map(candle => ({
           time: candle.time,
-          value: macdLine[i]
-        });
-      }
-      
-      // Ensure we only use valid data points for signal line
-      for (let i = 0; i < signalLine.length; i++) {
-        if (signalLine[i] === null) continue;
+          value: candle.volume,
+          color: candle.close >= candle.open ? '#26a69a88' : '#ef535088',
+        }));
         
-        const candle = data.candles[i + signalStartIndex];
-        if (!candle) continue;
-        
-        signalLineData.push({
-          time: candle.time,
-          value: signalLine[i]
-        });
+        if (chartRefs.current.volumeSeries) {
+          chartRefs.current.volumeSeries.setData(volumeData);
+        }
+      } catch (error) {
+        console.error('Error updating volume chart:', error);
       }
-      
-      // Ensure we only use valid data points for histogram
-      for (let i = 0; i < validHistogram.length; i++) {
-        const candle = data.candles[i + signalStartIndex];
-        if (!candle) continue;
-        
-        histogramData.push({
-          time: candle.time,
-          value: validHistogram[i],
-          color: validHistogram[i] >= 0 ? '#26a69a' : '#ef5350'
-        });
-      }
-      
-      if (chartRefs.current.macdLineSeries) {
-        chartRefs.current.macdLineSeries.setData(macdLineData);
-      }
-      
-      if (chartRefs.current.macdSignalSeries) {
-        chartRefs.current.macdSignalSeries.setData(signalLineData);
-      }
-      
-      if (chartRefs.current.macdHistogramSeries) {
-        chartRefs.current.macdHistogramSeries.setData(histogramData);
-      }
-      
-      // Update volume chart
-      const volumeData = data.candles.map(candle => ({
-        time: candle.time,
-        value: candle.volume,
-        color: candle.close >= candle.open ? '#26a69a88' : '#ef535088',
-      }));
-      
-      chartRefs.current.volumeSeries.setData(volumeData);
       
       // Generate alerts based on indicator values
-      generateAlerts(rsiChartData, macdLineData, signalLineData, histogramData);
+      try {
+        generateAlerts(
+          data.candles.slice(indicatorParams.rsi.period).map((candle, i) => ({
+            time: candle.time,
+            value: rsiData[i]
+          })),
+          macdLineData,
+          signalLineData,
+          histogramData
+        );
+      } catch (error) {
+        console.error('Error generating alerts:', error);
+      }
       
     } catch (error) {
       console.error('Error fetching market data:', error);
