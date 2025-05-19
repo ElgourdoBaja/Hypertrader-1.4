@@ -285,6 +285,10 @@ const TechnicalAnalysis = () => {
       timeScale: {
         borderColor: '#3c3c3c',
         visible: false,
+        tickMarkFormatter: (time) => {
+          const date = new Date(time * 1000);
+          return `${date.getUTCHours().toString().padStart(2, '0')}:${date.getUTCMinutes().toString().padStart(2, '0')}`;
+        }
       },
     });
     
