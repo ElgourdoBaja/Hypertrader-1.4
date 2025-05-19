@@ -59,9 +59,10 @@ const Sidebar = ({ isOpen }) => {
       <div className="absolute bottom-0 w-full p-4">
         <div className={`flex items-center ${isOpen ? 'justify-between' : 'justify-center'} text-sm text-gray-400`}>
           {isOpen && <span>v1.0.0</span>}
-          <div className="flex items-center">
-            <div className={`h-2 w-2 rounded-full bg-green-500 mr-2 ${isOpen ? '' : 'mx-auto'}`}></div>
-            {isOpen && <span>Online</span>}
+          <div className={`flex items-center ${isOpen ? '' : 'mx-auto'}`}>
+            {isOpen ? <ConnectionStatus /> : (
+              <div className="h-2 w-2 rounded-full bg-green-500"></div>
+            )}
           </div>
         </div>
       </div>
