@@ -115,6 +115,7 @@ const TechnicalAnalysis = () => {
   });
   const [alerts, setAlerts] = useState([]);
   const [marketData, setMarketData] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [timeframes, setTimeframes] = useState([
     { value: '5m', active: false },
     { value: '15m', active: false },
