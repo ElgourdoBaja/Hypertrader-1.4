@@ -7,6 +7,7 @@ import Sidebar from "./components/common/Sidebar";
 import Header from "./components/common/Header";
 import Dashboard from "./components/dashboard/Dashboard";
 import Trading from "./components/trading/Trading";
+import PositionManagement from "./components/trading/PositionManagement";
 import Backtesting from "./components/trading/Backtesting";
 import StrategyManager from "./components/trading/StrategyManager";
 import Settings from "./components/settings/Settings";
