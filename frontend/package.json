@@ -23,7 +23,7 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "electron:dev": "concurrently \"BROWSER=none yarn start\" \"wait-on http://localhost:3000 && electron .\"",
+    "electron:dev": "concurrently \"set BROWSER=none && yarn start\" \"wait-on http://localhost:3000 && electron .\"",
     "electron:build": "yarn build && electron-builder",
     "electron:start": "electron .",
     "build:windows": "node build-windows-installer.js"
