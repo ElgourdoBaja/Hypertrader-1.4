@@ -18,7 +18,7 @@ const Sidebar = ({ isOpen }) => {
   ];
 
   return (
-    <aside className={`bg-gray-800 text-white transition-all duration-300 ${isOpen ? 'w-64' : 'w-20'} h-screen overflow-y-auto fixed left-0 top-0 shadow-lg z-10`}>
+    <aside className={`bg-gray-800 text-white transition-all duration-300 ${isOpen ? 'w-64' : 'w-20'} h-screen overflow-y-auto fixed left-0 top-0 shadow-lg`}>
       <div className="p-4 flex justify-center items-center">
         <h1 className={`font-bold ${isOpen ? 'text-xl' : 'text-xs'} transition-all duration-300`}>
           {isOpen ? 'Hyperliquid Trader' : 'HT'}
