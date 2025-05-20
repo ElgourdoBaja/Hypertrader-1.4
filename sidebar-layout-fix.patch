@@ -1,0 +1,36 @@
+From: Assistant <assistant@example.com>
+Date: Mon, 20 May 2024 18:00:00 +0000
+Subject: [PATCH] Fix sidebar layout issues
+
+---
+ src/App.js                         | 2 +-
+ src/components/common/Sidebar.js   | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/frontend/src/App.js b/frontend/src/App.js
+index 1234567..abcdefg 100644
+--- a/frontend/src/App.js
++++ b/frontend/src/App.js
+@@ -130,7 +130,7 @@ function App() {
+         {isApiConfigured ? (
+           <div className="flex h-screen overflow-hidden">
+             <Sidebar isOpen={sidebarOpen} />
+-            <div className="flex flex-col flex-1 overflow-hidden">
++            <div className={`flex flex-col flex-1 overflow-hidden transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-20'}`}>
+               <Header toggleSidebar={toggleSidebar} />
+               <main className="flex-1 overflow-y-auto p-4">
+                 <Routes>
+diff --git a/frontend/src/components/common/Sidebar.js b/frontend/src/components/common/Sidebar.js
+index 1234567..abcdefg 100644
+--- a/frontend/src/components/common/Sidebar.js
++++ b/frontend/src/components/common/Sidebar.js
+@@ -20,7 +20,7 @@ const Sidebar = ({ isOpen }) => {
+ 
+   return (
+-    <aside className={`bg-gray-800 text-white transition-all duration-300 ${isOpen ? 'w-64' : 'w-20'} h-screen overflow-y-auto fixed left-0 top-0 shadow-lg z-10`}>
++    <aside className={`bg-gray-800 text-white transition-all duration-300 ${isOpen ? 'w-64' : 'w-20'} h-screen overflow-y-auto fixed left-0 top-0 shadow-lg`}>
+       <div className="p-4 flex justify-center items-center">
+         <h1 className={`font-bold ${isOpen ? 'text-xl' : 'text-xs'} transition-all duration-300`}>
+           {isOpen ? 'Hyperliquid Trader' : 'HT'}
+-- 
+2.34.1
