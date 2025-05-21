@@ -95,6 +95,36 @@ class HyperliquidDataService {
   }
   
   /**
+   * Sign a request with the API secret
+   * @param {Object} data - Request data to sign
+   * @returns {string} Signature
+   * @private
+   */
+  _signRequest(data) {
+    try {
+      // In a production app, you'd use a proper HMAC-SHA256 implementation
+      // This is a simplified version for demo purposes
+      const message = JSON.stringify(data);
+      
+      // For Electron environments, use the native crypto module
+      if (window.electronAPI && window.require) {
+        const crypto = window.require('crypto');
+        const hmac = crypto.createHmac('sha256', this.apiSecret);
+        hmac.update(message);
+        return hmac.digest('hex');
+      } else {
+        // For browser environments, we'd need a Web Crypto API implementation
+        // or a JS crypto library
+        console.warn('Proper request signing not available in this environment');
+        return 'demo-signature';
+      }
+    } catch (error) {
+      console.error('Error signing request:', error);
+      return 'error-signature';
+    }
+  }
+  
+  /**
    * Connect to the Hyperliquid WebSocket API
    * @returns {Promise<boolean>} Success status
    */
@@ -107,24 +137,59 @@ class HyperliquidDataService {
     try {
       this._updateStatus('connecting');
       
-      // In a real implementation, this would use the actual WebSocket connection
-      // For this prototype, we'll simulate WebSocket behavior
-      console.log('Connecting to Hyperliquid WebSocket...');
+      // Create actual WebSocket connection
+      this.ws = new WebSocket(HYPERLIQUID_API_CONFIG.WS_API_URL);
       
-      // Simulate successful connection
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      this.ws.onopen = () => {
+        console.log('Connected to Hyperliquid WebSocket');
+        this._updateStatus('connected');
+        
+        // Authenticate WebSocket connection if needed
+        this._authenticateWebSocket();
+        
+        // Reset reconnect attempts on successful connection
+        this.reconnectAttempts = 0;
+        this.reconnectInterval = 2000;
+      };
       
-      // Reset reconnect attempts on successful connection
-      this.reconnectAttempts = 0;
-      this.reconnectInterval = 2000;
+      this.ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          this._handleWebSocketMessage(data);
+        } catch (error) {
+          console.error('Error parsing WebSocket message:', error);
+        }
+      };
       
-      this._updateStatus('connected');
-      console.log('Connected to Hyperliquid WebSocket');
+      this.ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+        this._updateStatus('error');
+      };
       
-      // Simulate receiving data
-      this._simulateWebSocketData();
+      this.ws.onclose = (event) => {
+        console.log(`WebSocket closed: ${event.code} ${event.reason}`);
+        this._updateStatus('disconnected');
+        
+        // Attempt to reconnect if the connection was not closed intentionally
+        if (event.code !== 1000) {
+          this._attemptReconnect();
+        }
+      };
       
-      return true;
+      // Wait for connection to open
+      return new Promise((resolve) => {
+        const checkState = () => {
+          if (this.ws.readyState === WebSocket.OPEN) {
+            resolve(true);
+          } else if (this.ws.readyState === WebSocket.CLOSED || this.ws.readyState === WebSocket.CLOSING) {
+            resolve(false);
+          } else {
+            setTimeout(checkState, 100);
+          }
+        };
+        
+        checkState();
+      });
     } catch (error) {
       this._updateStatus('error');
       console.error('Error connecting to Hyperliquid WebSocket:', error);
@@ -133,6 +198,114 @@ class HyperliquidDataService {
       this._attemptReconnect();
       
       return false;
+    }
+  }
+  
+  /**
+   * Authenticate the WebSocket connection
+   * @private
+   */
+  _authenticateWebSocket() {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      return;
+    }
+    
+    const authMessage = {
+      op: 'auth',
+      data: {
+        timestamp: Date.now(),
+        apiKey: this.apiKey
+      }
+    };
+    
+    // Add signature
+    authMessage.data.signature = this._signRequest(authMessage.data);
+    
+    // Send authentication message
+    this.ws.send(JSON.stringify(authMessage));
+  }
+  
+  /**
+   * Handle incoming WebSocket messages
+   * @param {Object} data - Parsed message data
+   * @private
+   */
+  _handleWebSocketMessage(data) {
+    if (!data || !data.type) {
+      return;
+    }
+    
+    // Handle different message types
+    switch (data.type) {
+      case 'ticker':
+        this._handleTickerUpdate(data);
+        break;
+      case 'orderbook':
+        this._handleOrderBookUpdate(data);
+        break;
+      case 'trades':
+        this._handleTradesUpdate(data);
+        break;
+      case 'auth':
+        this._handleAuthResponse(data);
+        break;
+      default:
+        console.log('Unhandled WebSocket message type:', data.type);
+    }
+  }
+  
+  /**
+   * Handle ticker updates from WebSocket
+   * @param {Object} data - Ticker data
+   * @private
+   */
+  _handleTickerUpdate(data) {
+    const subscriptionId = `ticker:${data.symbol}`;
+    const callback = this.subscriptions.get(subscriptionId);
+    
+    if (callback) {
+      callback(data);
+    }
+  }
+  
+  /**
+   * Handle orderbook updates from WebSocket
+   * @param {Object} data - Orderbook data
+   * @private
+   */
+  _handleOrderBookUpdate(data) {
+    const subscriptionId = `orderbook:${data.symbol}`;
+    const callback = this.subscriptions.get(subscriptionId);
+    
+    if (callback) {
+      callback(data);
+    }
+  }
+  
+  /**
+   * Handle trades updates from WebSocket
+   * @param {Object} data - Trades data
+   * @private
+   */
+  _handleTradesUpdate(data) {
+    const subscriptionId = `trades:${data.symbol}`;
+    const callback = this.subscriptions.get(subscriptionId);
+    
+    if (callback) {
+      callback(data);
+    }
+  }
+  
+  /**
+   * Handle authentication response
+   * @param {Object} data - Auth response data
+   * @private
+   */
+  _handleAuthResponse(data) {
+    if (data.success) {
+      console.log('WebSocket authentication successful');
+    } else {
+      console.error('WebSocket authentication failed:', data.message);
     }
   }
   
@@ -161,7 +334,7 @@ class HyperliquidDataService {
    */
   disconnectWebSocket() {
     if (this.ws) {
-      this.ws.close();
+      this.ws.close(1000, 'User initiated disconnect');
       this.ws = null;
     }
     
@@ -182,6 +355,17 @@ class HyperliquidDataService {
     // Store subscription
     this.subscriptions.set(subscriptionId, callback);
     
+    // Send subscription message to WebSocket
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      const subscribeMessage = {
+        op: 'subscribe',
+        channel: channel,
+        markets: [symbol]
+      };
+      
+      this.ws.send(JSON.stringify(subscribeMessage));
+    }
+    
     console.log(`Subscribed to ${subscriptionId}`);
     return subscriptionId;
   }
@@ -192,105 +376,70 @@ class HyperliquidDataService {
    */
   unsubscribeFromMarketData(subscriptionId) {
     if (this.subscriptions.has(subscriptionId)) {
+      const [channel, symbol] = subscriptionId.split(':');
+      
+      // Send unsubscribe message to WebSocket
+      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+        const unsubscribeMessage = {
+          op: 'unsubscribe',
+          channel: channel,
+          markets: [symbol]
+        };
+        
+        this.ws.send(JSON.stringify(unsubscribeMessage));
+      }
+      
       this.subscriptions.delete(subscriptionId);
       console.log(`Unsubscribed from ${subscriptionId}`);
     }
   }
   
   /**
-   * Simulate WebSocket data for development
+   * Make an authenticated API request
+   * @param {string} endpoint - API endpoint
+   * @param {Object} data - Request data
+   * @param {string} method - HTTP method (GET, POST, etc.)
+   * @returns {Promise<Object>} Response data
    * @private
    */
-  _simulateWebSocketData() {
-    // Simulate ticker updates
-    setInterval(() => {
-      this.subscriptions.forEach((callback, subscriptionId) => {
-        if (subscriptionId.startsWith('ticker:')) {
-          const symbol = subscriptionId.split(':')[1];
-          const basePrice = symbol === 'BTC-PERP' ? 58000 : 
-                          symbol === 'ETH-PERP' ? 3200 : 
-                          symbol === 'SOL-PERP' ? 145 : 100;
-          
-          const randomChange = (Math.random() * 2 - 1) * 0.001; // +/- 0.1%
-          const price = basePrice * (1 + randomChange);
-          
-          const tickerData = {
-            symbol,
-            lastPrice: price,
-            bidPrice: price * 0.9995,
-            askPrice: price * 1.0005,
-            volume: Math.random() * 10000,
-            timestamp: Date.now()
-          };
-          
-          callback(tickerData);
-        }
-      });
-    }, 1000);
-
-    // Simulate orderbook updates
-    setInterval(() => {
-      this.subscriptions.forEach((callback, subscriptionId) => {
-        if (subscriptionId.startsWith('orderbook:')) {
-          const symbol = subscriptionId.split(':')[1];
-          const basePrice = symbol === 'BTC-PERP' ? 58000 : 
-                          symbol === 'ETH-PERP' ? 3200 : 
-                          symbol === 'SOL-PERP' ? 145 : 100;
-          
-          const bids = [];
-          const asks = [];
-          
-          for (let i = 0; i < 10; i++) {
-            const bidPrice = basePrice * (1 - 0.0001 * (i + 1));
-            const askPrice = basePrice * (1 + 0.0001 * (i + 1));
-            
-            bids.push([bidPrice, Math.random() * 5]);
-            asks.push([askPrice, Math.random() * 5]);
-          }
-          
-          const orderBookData = {
-            symbol,
-            bids,
-            asks,
-            timestamp: Date.now()
-          };
-          
-          callback(orderBookData);
-        }
-      });
-    }, 2000);
-    
-    // Simulate trade updates
-    setInterval(() => {
-      this.subscriptions.forEach((callback, subscriptionId) => {
-        if (subscriptionId.startsWith('trades:')) {
-          const symbol = subscriptionId.split(':')[1];
-          const basePrice = symbol === 'BTC-PERP' ? 58000 : 
-                          symbol === 'ETH-PERP' ? 3200 : 
-                          symbol === 'SOL-PERP' ? 145 : 100;
-          
-          const tradeCount = Math.floor(Math.random() * 5) + 1;
-          const trades = [];
-          
-          for (let i = 0; i < tradeCount; i++) {
-            const price = basePrice * (1 + (Math.random() * 0.002 - 0.001));
-            const size = Math.random() * 2;
-            const side = Math.random() > 0.5 ? 'buy' : 'sell';
-            
-            trades.push({
-              id: `trade_${Date.now()}_${i}`,
-              symbol,
-              price,
-              size,
-              side,
-              timestamp: Date.now() - i * 100
-            });
-          }
-          
-          callback(trades);
-        }
-      });
-    }, 3000);
+  async _apiRequest(endpoint, data = {}, method = 'GET') {
+    try {
+      const url = `${HYPERLIQUID_API_CONFIG.REST_API_URL}/${endpoint}`;
+      
+      const headers = {
+        ...HYPERLIQUID_API_CONFIG.DEFAULT_HEADERS,
+        'X-API-Key': this.apiKey
+      };
+      
+      // Add timestamp and signature for authenticated requests
+      const timestamp = Date.now();
+      data.timestamp = timestamp;
+      
+      const signature = this._signRequest(data);
+      headers['X-API-Signature'] = signature;
+      
+      const requestOptions = {
+        method,
+        headers,
+        credentials: 'omit' // Don't send cookies
+      };
+      
+      // Add request body for non-GET requests
+      if (method !== 'GET') {
+        requestOptions.body = JSON.stringify(data);
+      }
+      
+      const response = await fetch(url, requestOptions);
+      
+      if (!response.ok) {
+        throw new Error(`API request failed with status ${response.status}: ${response.statusText}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      this.defaultErrorHandler(error);
+      throw error;
+    }
   }
   
   /**
@@ -299,22 +448,8 @@ class HyperliquidDataService {
    */
   async getMarkets() {
     try {
-      // In a real implementation, this would make an API call
-      // For this prototype, we'll return mock data
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      return [
-        { symbol: 'BTC-PERP', baseAsset: 'BTC', quoteAsset: 'USD', status: 'TRADING', minOrderSize: 0.001, tickSize: 0.5, minNotional: 10 },
-        { symbol: 'ETH-PERP', baseAsset: 'ETH', quoteAsset: 'USD', status: 'TRADING', minOrderSize: 0.01, tickSize: 0.05, minNotional: 10 },
-        { symbol: 'SOL-PERP', baseAsset: 'SOL', quoteAsset: 'USD', status: 'TRADING', minOrderSize: 0.1, tickSize: 0.01, minNotional: 10 },
-        { symbol: 'AVAX-PERP', baseAsset: 'AVAX', quoteAsset: 'USD', status: 'TRADING', minOrderSize: 0.1, tickSize: 0.01, minNotional: 10 },
-        { symbol: 'NEAR-PERP', baseAsset: 'NEAR', quoteAsset: 'USD', status: 'TRADING', minOrderSize: 1, tickSize: 0.001, minNotional: 10 },
-        { symbol: 'ATOM-PERP', baseAsset: 'ATOM', quoteAsset: 'USD', status: 'TRADING', minOrderSize: 0.1, tickSize: 0.01, minNotional: 10 },
-        { symbol: 'DOT-PERP', baseAsset: 'DOT', quoteAsset: 'USD', status: 'TRADING', minOrderSize: 0.1, tickSize: 0.01, minNotional: 10 },
-        { symbol: 'MATIC-PERP', baseAsset: 'MATIC', quoteAsset: 'USD', status: 'TRADING', minOrderSize: 1, tickSize: 0.0001, minNotional: 10 },
-        { symbol: 'LINK-PERP', baseAsset: 'LINK', quoteAsset: 'USD', status: 'TRADING', minOrderSize: 0.1, tickSize: 0.01, minNotional: 10 },
-        { symbol: 'UNI-PERP', baseAsset: 'UNI', quoteAsset: 'USD', status: 'TRADING', minOrderSize: 0.1, tickSize: 0.01, minNotional: 10 },
-      ];
+      const response = await this._apiRequest('markets');
+      return response.markets || [];
     } catch (error) {
       this.defaultErrorHandler(error);
       return [];
@@ -330,70 +465,13 @@ class HyperliquidDataService {
    */
   async getHistoricalCandles(symbol, timeframe, limit = 200) {
     try {
-      // In a real implementation, this would make an API call
-      // For this prototype, we'll return mock data
-      await new Promise(resolve => setTimeout(resolve, 800));
+      const response = await this._apiRequest('klines', {
+        symbol,
+        interval: timeframe,
+        limit
+      });
       
-      const candles = [];
-      const basePrice = symbol === 'BTC-PERP' ? 58000 : 
-                       symbol === 'ETH-PERP' ? 3200 : 
-                       symbol === 'SOL-PERP' ? 145 : 100;
-      
-      const volatility = symbol === 'BTC-PERP' ? 0.01 : 
-                        symbol === 'ETH-PERP' ? 0.015 : 0.02;
-      
-      const now = Math.floor(Date.now() / 1000);
-      const secondsInCandle = timeframe === '1m' ? 60 :
-                             timeframe === '5m' ? 300 :
-                             timeframe === '15m' ? 900 :
-                             timeframe === '30m' ? 1800 :
-                             timeframe === '1h' ? 3600 :
-                             timeframe === '4h' ? 14400 : 86400;
-      
-      let currentPrice = basePrice;
-      let trend = 0; // -1 for downtrend, 0 for neutral, 1 for uptrend
-      
-      // Generate candles with realistic price movement
-      for (let i = 0; i < limit; i++) {
-        const time = now - (limit - i) * secondsInCandle;
-        
-        // Change trend occasionally to mimic real market behavior
-        if (i % 50 === 0 || (Math.random() < 0.05 && i > 20)) {
-          trend = Math.floor(Math.random() * 3) - 1; // Random value: -1, 0, or 1
-        }
-        
-        // Calculate price change with trend bias
-        const trendBias = trend * volatility * 0.3;
-        const randomChange = (Math.random() * 2 - 1) * volatility + trendBias;
-        
-        // Update price with change
-        currentPrice = currentPrice * (1 + randomChange);
-        
-        // Calculate OHLC values
-        const open = currentPrice;
-        const high = open * (1 + Math.random() * volatility);
-        const low = open * (1 - Math.random() * volatility);
-        const close = Math.max(low, Math.min(high, open * (1 + (Math.random() * 2 - 1) * volatility)));
-        
-        // Generate volume with random spikes
-        const baseVolume = Math.random() * 100 + 50;
-        const volumeSpike = Math.random() < 0.1 ? Math.random() * 5 + 1 : 1;
-        const volume = baseVolume * volumeSpike;
-        
-        candles.push({
-          time,
-          open,
-          high,
-          low,
-          close,
-          volume
-        });
-        
-        // Use the close price as the next candle's basis
-        currentPrice = close;
-      }
-      
-      return candles;
+      return response.candles || [];
     } catch (error) {
       this.defaultErrorHandler(error);
       return [];
@@ -407,25 +485,8 @@ class HyperliquidDataService {
    */
   async getTicker(symbol) {
     try {
-      // In a real implementation, this would make an API call
-      // For this prototype, we'll return mock data
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      const basePrice = symbol === 'BTC-PERP' ? 58000 : 
-                       symbol === 'ETH-PERP' ? 3200 : 
-                       symbol === 'SOL-PERP' ? 145 : 100;
-      
-      const randomChange = (Math.random() * 2 - 1) * 0.01; // +/- 1%
-      const price = basePrice * (1 + randomChange);
-      
-      return {
-        symbol,
-        lastPrice: price,
-        bidPrice: price * 0.9995,
-        askPrice: price * 1.0005,
-        volume: Math.random() * 10000,
-        timestamp: Date.now()
-      };
+      const response = await this._apiRequest('ticker', { symbol });
+      return response;
     } catch (error) {
       this.defaultErrorHandler(error);
       return null;
@@ -440,30 +501,16 @@ class HyperliquidDataService {
    */
   async getOrderBook(symbol, depth = 10) {
     try {
-      // In a real implementation, this would make an API call
-      // For this prototype, we'll return mock data
-      await new Promise(resolve => setTimeout(resolve, 400));
-      
-      const basePrice = symbol === 'BTC-PERP' ? 58000 : 
-                       symbol === 'ETH-PERP' ? 3200 : 
-                       symbol === 'SOL-PERP' ? 145 : 100;
-      
-      const bids = [];
-      const asks = [];
-      
-      for (let i = 0; i < depth; i++) {
-        const bidPrice = basePrice * (1 - 0.0001 * (i + 1));
-        const askPrice = basePrice * (1 + 0.0001 * (i + 1));
-        
-        bids.push([bidPrice, Math.random() * 5]);
-        asks.push([askPrice, Math.random() * 5]);
-      }
+      const response = await this._apiRequest('depth', {
+        symbol,
+        limit: depth
+      });
       
       return {
         symbol,
-        bids,
-        asks,
-        timestamp: Date.now()
+        bids: response.bids || [],
+        asks: response.asks || [],
+        timestamp: response.timestamp
       };
     } catch (error) {
       this.defaultErrorHandler(error);
@@ -479,32 +526,12 @@ class HyperliquidDataService {
    */
   async getRecentTrades(symbol, limit = 50) {
     try {
-      // In a real implementation, this would make an API call
-      // For this prototype, we'll return mock data
-      await new Promise(resolve => setTimeout(resolve, 350));
+      const response = await this._apiRequest('trades', {
+        symbol,
+        limit
+      });
       
-      const basePrice = symbol === 'BTC-PERP' ? 58000 : 
-                       symbol === 'ETH-PERP' ? 3200 : 
-                       symbol === 'SOL-PERP' ? 145 : 100;
-      
-      const trades = [];
-      
-      for (let i = 0; i < limit; i++) {
-        const price = basePrice * (1 + (Math.random() * 0.002 - 0.001));
-        const size = Math.random() * 2;
-        const side = Math.random() > 0.5 ? 'buy' : 'sell';
-        
-        trades.push({
-          id: `trade_${Date.now() - i * 1000}`,
-          symbol,
-          price,
-          size,
-          side,
-          timestamp: Date.now() - i * 1000
-        });
-      }
-      
-      return trades;
+      return response.trades || [];
     } catch (error) {
       this.defaultErrorHandler(error);
       return [];
