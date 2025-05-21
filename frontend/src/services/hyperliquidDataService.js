@@ -519,23 +519,62 @@ class HyperliquidDataService {
   }
   
   /**
-   * Fetch recent trades for a symbol
-   * @param {string} symbol - Market symbol
-   * @param {number} limit - Number of trades to fetch
-   * @returns {Promise<Array>} Recent trades
+   * Test the connection to the Hyperliquid API
+   * @returns {Promise<{success: boolean, message: string}>} Test result
    */
-  async getRecentTrades(symbol, limit = 50) {
+  async testConnection() {
     try {
-      const response = await this._apiRequest('trades', {
-        symbol,
-        limit
-      });
+      if (!this.apiKey || !this.apiSecret) {
+        return { 
+          success: false, 
+          message: 'API credentials not configured'
+        };
+      }
       
-      return response.trades || [];
+      // Test WebSocket connection
+      const wsConnected = await this.connectWebSocket();
+      if (!wsConnected) {
+        return {
+          success: false,
+          message: 'Failed to connect to WebSocket API'
+        };
+      }
+      
+      // Test REST API with a simple endpoint
+      try {
+        const markets = await this.getMarkets();
+        if (Array.isArray(markets) && markets.length > 0) {
+          return {
+            success: true,
+            message: `Connected successfully to Hyperliquid API. Found ${markets.length} markets.`,
+            isLiveConnection: true
+          };
+        } else {
+          return {
+            success: false,
+            message: 'Connected to API but received invalid market data'
+          };
+        }
+      } catch (apiError) {
+        return {
+          success: false,
+          message: `API request failed: ${apiError.message}`
+        };
+      }
     } catch (error) {
-      this.defaultErrorHandler(error);
-      return [];
+      return {
+        success: false,
+        message: `Connection test failed: ${error.message}`
+      };
     }
+  }
+
+  /**
+   * Check if this is a live connection or demo mode
+   * @returns {boolean} True if connected to real API
+   */
+  isLiveConnection() {
+    return this.connectionStatus === 'connected' && this.apiKey && this.apiSecret;
   }
 }
 
