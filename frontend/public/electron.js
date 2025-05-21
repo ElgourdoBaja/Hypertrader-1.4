@@ -103,6 +103,39 @@ function createWindow() {
     log.info('Main window displayed');
   });
 
+  // Handle window close event - add confirmation dialog
+  mainWindow.on('close', (e) => {
+    if (!isAppQuitting) {
+      e.preventDefault();
+      
+      dialog.showMessageBox(mainWindow, {
+        type: 'question',
+        buttons: ['Yes', 'No'],
+        title: 'Confirm Exit',
+        message: 'Are you sure you want to exit Hyperliquid Trader?',
+        detail: 'Any unsaved changes will be lost.'
+      }).then(result => {
+        if (result.response === 0) { // 'Yes' clicked
+          isAppQuitting = true;
+          mainWindow.close();
+        }
+      });
+      return;
+    }
+    
+    // If we're actually quitting, clean up the dev server if needed
+    if (isDev) {
+      log.info(`Cleaning up development server on port ${devServerPort}`);
+      killProcessOnPort(devServerPort)
+        .then(() => {
+          log.info('Development server cleanup complete');
+        })
+        .catch(error => {
+          log.error(`Error during development server cleanup: ${error}`);
+        });
+    }
+  });
+
   mainWindow.on('closed', () => {
     mainWindow = null;
     log.info('Main window closed');
