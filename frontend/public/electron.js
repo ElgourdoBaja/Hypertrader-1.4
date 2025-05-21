@@ -87,7 +87,7 @@ function createWindow() {
 
   // Load the app - use local server in dev, file in production
   const startUrl = isDev
-    ? 'http://localhost:3000'
+    ? `http://localhost:${devServerPort}`
     : `file://${path.join(__dirname, '../build/index.html')}`;
   
   mainWindow.loadURL(startUrl);
