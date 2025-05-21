@@ -10,6 +10,11 @@ call yarn install --ignore-scripts
 
 echo.
 echo Dependencies installed! You can now run the application with:
-echo yarn electron:dev
+echo.
+echo 1. Standard mode: run-app.bat
+echo 2. Safe mode (cleans up previous instances): run-app-safe.bat
+echo.
+echo TIP: If you encounter "port 3000 already in use" errors, use run-app-safe.bat
+echo     or manually end the node.exe processes in Task Manager.
 echo.
 pause
