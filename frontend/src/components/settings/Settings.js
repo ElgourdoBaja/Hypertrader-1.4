@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import hyperliquidDataService from '../services/hyperliquidDataService';
+import hyperliquidDataService from '../../services/hyperliquidDataService';
 
 const Settings = () => {
   const [generalSettings, setGeneralSettings] = useState({
