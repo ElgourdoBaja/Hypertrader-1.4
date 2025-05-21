@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import hyperliquidDataService from '../services/hyperliquidDataService';
 
 const Settings = () => {
   const [generalSettings, setGeneralSettings] = useState({
@@ -20,6 +21,12 @@ const Settings = () => {
     emailAddress: '',
     saveTradeHistory: true,
     exportFormat: 'csv'
+  });
+
+  const [connectionStatus, setConnectionStatus] = useState({
+    testing: false,
+    result: null,
+    isLive: hyperliquidDataService.isLiveConnection()
   });
   
   // Load settings on component mount
@@ -83,6 +90,45 @@ const Settings = () => {
     });
   };
 
+  // Test API connection
+  const testApiConnection = async () => {
+    setConnectionStatus({
+      ...connectionStatus,
+      testing: true,
+      result: null
+    });
+
+    try {
+      const result = await hyperliquidDataService.testConnection();
+      setConnectionStatus({
+        testing: false,
+        result: result,
+        isLive: result.isLiveConnection || false
+      });
+    } catch (error) {
+      setConnectionStatus({
+        testing: false,
+        result: {
+          success: false,
+          message: `Connection test failed: ${error.message}`
+        },
+        isLive: false
+      });
+    }
+  };
+
+  const updateApiCredentials = () => {
+    if (window.electronAPI) {
+      window.electronAPI.getApiCredentials()
+        .then(creds => {
+          alert(`Current API Key: ${creds.apiKey ? '******' + creds.apiKey.slice(-6) : 'Not set'}`);
+        })
+        .catch(err => {
+          console.error('Failed to get credentials:', err);
+        });
+    }
+  };
+
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-6">Settings</h1>
@@ -93,9 +139,47 @@ const Settings = () => {
           <h2 className="text-xl font-semibold mb-4">API Settings</h2>
           <p className="text-gray-400 mb-4">Configure your Hyperliquid API credentials.</p>
           
-          <button className="btn btn-primary">
-            Update API Credentials
-          </button>
+          <div className="mb-4">
+            <div className="flex items-center space-x-2">
+              <button 
+                className="btn btn-primary"
+                onClick={updateApiCredentials}
+              >
+                Update API Credentials
+              </button>
+              
+              <button 
+                className={`btn ${connectionStatus.testing ? 'btn-disabled' : connectionStatus.isLive ? 'btn-success' : 'btn-secondary'}`}
+                onClick={testApiConnection}
+                disabled={connectionStatus.testing}
+              >
+                {connectionStatus.testing ? 'Testing...' : 'Test Connection'}
+              </button>
+            </div>
+            
+            {connectionStatus.result && (
+              <div className={`mt-3 p-3 rounded ${connectionStatus.result.success ? 'bg-green-800' : 'bg-red-800'}`}>
+                <p className="text-sm">
+                  {connectionStatus.result.message}
+                </p>
+                {connectionStatus.isLive && (
+                  <p className="text-sm font-bold mt-1 text-green-400">
+                    Running in LIVE mode with real API connection
+                  </p>
+                )}
+              </div>
+            )}
+            
+            {!connectionStatus.result && (
+              <div className="mt-3 p-3 rounded bg-gray-700">
+                <p className="text-sm">
+                  {connectionStatus.isLive ? 
+                    'Currently connected to live Hyperliquid API.' : 
+                    'Currently running in demo mode with simulated data.'}
+                </p>
+              </div>
+            )}
+          </div>
         </div>
         
         {/* General Settings */}
