@@ -1,8 +1,10 @@
-const { app, BrowserWindow, ipcMain, Menu } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu, dialog } = require('electron');
 const path = require('path');
 const isDev = require('electron-is-dev');
 const log = require('electron-log');
 const Store = require('electron-store');
+const { exec } = require('child_process');
+const os = require('os');
 
 // Set up logging
 log.transports.file.level = 'info';
@@ -16,6 +18,54 @@ const store = new Store({
 
 // Keep a global reference of the window object to avoid garbage collection
 let mainWindow;
+let isAppQuitting = false;
+let devServerPort = 3000; // Default React dev server port
+
+// Function to find and kill processes using a specific port (for Windows)
+function killProcessOnPort(port) {
+  return new Promise((resolve, reject) => {
+    if (os.platform() === 'win32') {
+      // Windows - find process using netstat and kill it
+      exec(`netstat -ano | findstr :${port}`, (error, stdout) => {
+        if (error) {
+          log.warn(`No process found using port ${port}`);
+          resolve();
+          return;
+        }
+        
+        const lines = stdout.trim().split('\n');
+        const pidPattern = /(\d+)$/;
+        
+        for (const line of lines) {
+          const match = line.match(pidPattern);
+          if (match && match[1]) {
+            const pid = match[1];
+            log.info(`Killing process ${pid} using port ${port}`);
+            
+            exec(`taskkill /F /PID ${pid}`, (killError) => {
+              if (killError) {
+                log.error(`Failed to kill process ${pid}: ${killError}`);
+              } else {
+                log.info(`Successfully killed process ${pid}`);
+              }
+            });
+          }
+        }
+        
+        // Give some time for the processes to terminate
+        setTimeout(resolve, 500);
+      });
+    } else {
+      // Unix-like systems
+      exec(`lsof -i:${port} -t | xargs -r kill -9`, (error) => {
+        if (error) {
+          log.warn(`Error killing processes on port ${port}: ${error}`);
+        }
+        resolve();
+      });
+    }
+  });
+}
 
 function createWindow() {
   log.info('Creating main window...');
