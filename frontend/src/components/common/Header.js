@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import NotificationCenter from './NotificationCenter';
 import ConnectionStatus from './ConnectionStatus';
+import hyperliquidDataService from '../../services/hyperliquidDataService';
 
 const Header = ({ toggleSidebar }) => {
   const [time, setTime] = useState(new Date());
   const [isTrading, setIsTrading] = useState(false);
+  const [isLiveMode, setIsLiveMode] = useState(hyperliquidDataService.isLiveConnection());
 
   // Update time every second
   useEffect(() => {
@@ -14,6 +16,17 @@ const Header = ({ toggleSidebar }) => {
 
     return () => {
       clearInterval(timer);
+    };
+  }, []);
+
+  // Check connection status periodically
+  useEffect(() => {
+    const connectionCheck = setInterval(() => {
+      setIsLiveMode(hyperliquidDataService.isLiveConnection());
+    }, 5000);
+
+    return () => {
+      clearInterval(connectionCheck);
     };
   }, []);
 
@@ -59,6 +72,11 @@ const Header = ({ toggleSidebar }) => {
         <h2 className="text-xl font-semibold text-white">
           Hyperliquid High-Frequency Trader
         </h2>
+        
+        {/* Mode Indicator */}
+        <div className={`ml-4 px-3 py-1 rounded-full text-xs font-bold ${isLiveMode ? 'bg-green-600 text-white' : 'bg-yellow-600 text-white'}`}>
+          {isLiveMode ? 'LIVE MODE' : 'DEMO MODE'}
+        </div>
       </div>
       
       <div className="flex items-center space-x-4">
