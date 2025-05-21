@@ -519,6 +519,26 @@ class HyperliquidDataService {
   }
   
   /**
+   * Fetch recent trades for a symbol
+   * @param {string} symbol - Market symbol
+   * @param {number} limit - Number of trades to fetch
+   * @returns {Promise<Array>} Recent trades
+   */
+  async getRecentTrades(symbol, limit = 50) {
+    try {
+      const response = await this._apiRequest('trades', {
+        symbol,
+        limit
+      });
+      
+      return response.trades || [];
+    } catch (error) {
+      this.defaultErrorHandler(error);
+      return [];
+    }
+  }
+  
+  /**
    * Test the connection to the Hyperliquid API
    * @returns {Promise<{success: boolean, message: string}>} Test result
    */
