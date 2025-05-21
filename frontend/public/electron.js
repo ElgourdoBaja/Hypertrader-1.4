@@ -216,7 +216,13 @@ function createWindow() {
 }
 
 // Create main window when Electron is ready
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  // If in development mode, check if the port is already in use and clean it up
+  if (isDev) {
+    log.info(`Checking if port ${devServerPort} is already in use`);
+    await killProcessOnPort(devServerPort);
+  }
+  
   createWindow();
 
   // On macOS it's common to re-create a window when clicked on dock icon
@@ -233,7 +239,33 @@ app.whenReady().then(() => {
 // Quit when all windows are closed, except on macOS
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
+    isAppQuitting = true;
     app.quit();
+  }
+});
+
+// Handle final cleanup before app exits
+app.on('before-quit', async (event) => {
+  if (isDev) {
+    // Prevent the app from quitting immediately
+    event.preventDefault();
+    
+    // Set the flag to avoid loops
+    if (!isAppQuitting) {
+      isAppQuitting = true;
+      
+      // Clean up development server processes
+      log.info('Performing final cleanup before app quit...');
+      try {
+        await killProcessOnPort(devServerPort);
+        log.info('Cleanup completed, quitting application');
+        // Now actually quit
+        app.quit();
+      } catch (error) {
+        log.error(`Error during final cleanup: ${error}`);
+        app.exit(1); // Force exit in case of errors
+      }
+    }
   }
 });
 
