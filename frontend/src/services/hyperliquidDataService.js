@@ -520,42 +520,81 @@ class HyperliquidDataService {
    */
   async getMarkets() {
     try {
-      // Use the getMetaAndAssetCtxs endpoint
-      const response = await fetch(`${HYPERLIQUID_API_CONFIG.REST_API_URL}/info/getMetaAndAssetCtxs`, {
-        method: 'GET',
-        headers: HYPERLIQUID_API_CONFIG.DEFAULT_HEADERS
-      });
-      
-      if (!response.ok) {
-        throw new Error(`API request failed with status ${response.status}: ${response.statusText}`);
+      // First try the info endpoint
+      try {
+        const response = await fetch(`${HYPERLIQUID_API_CONFIG.REST_API_URL}/info`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            type: 'meta'
+          })
+        });
+        
+        if (!response.ok) {
+          throw new Error(`API request failed with status ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data && data.universe) {
+          // Transform the response into a format the app expects
+          return data.universe.map(market => ({
+            symbol: market.name + '-PERP',
+            baseAsset: market.name,
+            quoteAsset: 'USD',
+            status: 'TRADING',
+            minOrderSize: market.minSize || 0.001,
+            tickSize: market.tickSize || 0.01,
+            minNotional: market.minNotional || 1
+          }));
+        }
+      } catch (error) {
+        console.error('Error fetching markets from info endpoint:', error);
       }
       
-      const data = await response.json();
-      
-      if (data && data.universe) {
-        // Transform the response into a format the app expects
-        return data.universe.map(market => ({
-          symbol: market.name + '-PERP',
-          baseAsset: market.name,
-          quoteAsset: 'USD',
-          status: 'TRADING',
-          minOrderSize: market.minSize || 0.001,
-          tickSize: market.tickSize || 0.01,
-          minNotional: market.minNotional || 1
-        }));
+      // If the first approach fails, try the exchange endpoint
+      try {
+        const response = await fetch(`${HYPERLIQUID_API_CONFIG.REST_API_URL}/exchange/v1/all_mids`, {
+          method: 'GET',
+          headers: HYPERLIQUID_API_CONFIG.DEFAULT_HEADERS
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Exchange API request failed with status ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data && Object.keys(data).length > 0) {
+          // Transform the response into a format the app expects
+          return Object.keys(data).map(name => ({
+            symbol: name + '-PERP',
+            baseAsset: name,
+            quoteAsset: 'USD',
+            status: 'TRADING',
+            minOrderSize: 0.001,
+            tickSize: 0.01,
+            minNotional: 1
+          }));
+        }
+      } catch (error) {
+        console.error('Error fetching markets from exchange endpoint:', error);
       }
       
       // If we can't get real data, enable demo mode
-      if (!this.demoMode) {
+      if (!this.isDemoActive()) {
         this.enableDemoMode();
       }
       
+      // Return an empty array and let the demo mode handle it
       return [];
     } catch (error) {
       this.defaultErrorHandler(error);
       
       // If we hit an error, enable demo mode
-      if (!this.demoMode) {
+      if (!this.isDemoActive()) {
         this.enableDemoMode();
       }
       
