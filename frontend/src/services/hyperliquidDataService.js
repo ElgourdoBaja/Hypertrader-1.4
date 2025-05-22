@@ -584,6 +584,10 @@ class HyperliquidDataService {
       return this._getSimulatedMarkets();
     }
     
+    // Unhandled endpoint type
+    console.warn(`WARNING: Unhandled API endpoint in demo mode: ${endpoint}`);
+    console.warn(`This could indicate a disconnect between real and demo mode.`);
+    
     // Default empty response
     return {};
   }
