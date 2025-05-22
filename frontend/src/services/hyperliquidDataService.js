@@ -47,7 +47,15 @@ class HyperliquidDataService {
     // Start in demo mode by default
     this.demoMode = true;
     this.demoIntervals = [];
-    this._simulateWebSocketData();
+    
+    // Only start simulation if we don't have API credentials
+    if (!this.apiKey || !this.apiSecret) {
+      this._simulateWebSocketData();
+      return true;
+    }
+    
+    // If we have API credentials, try to connect to the real API
+    console.log('Attempting to connect to Hyperliquid API with provided credentials');
     
     // Test API connection
     try {
@@ -69,6 +77,7 @@ class HyperliquidDataService {
             // Successfully connected to the API
             this.disableDemoMode();
             this._updateStatus('connected');
+            console.log('Successfully connected to Hyperliquid API - LIVE MODE active');
             return true;
           }
         }
@@ -76,7 +85,7 @@ class HyperliquidDataService {
         console.error('Error connecting to API info endpoint:', error);
       }
       
-      // Try the exchange endpoint
+      // Try the exchange endpoint as a fallback
       try {
         const response = await fetch(`${HYPERLIQUID_API_CONFIG.REST_API_URL}/exchange/v1/all_mids`, {
           method: 'GET',
@@ -89,22 +98,23 @@ class HyperliquidDataService {
             // Successfully connected to the API
             this.disableDemoMode();
             this._updateStatus('connected');
+            console.log('Successfully connected to Hyperliquid API - LIVE MODE active');
             return true;
           }
         }
       } catch (error) {
         console.error('Error connecting to API exchange endpoint:', error);
       }
+      
+      // If we get here, we failed to connect to the API
+      console.warn('Failed to connect to Hyperliquid API, falling back to demo mode');
+      this.enableDemoMode();
+      return false;
     } catch (error) {
       console.error('Error during API connection test:', error);
-    }
-    
-    // If we couldn't connect to the real API, ensure demo mode is enabled
-    if (!this.isDemoActive()) {
       this.enableDemoMode();
+      return false;
     }
-    
-    return true;
   }
   
   /**
