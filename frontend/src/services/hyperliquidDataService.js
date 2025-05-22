@@ -1011,93 +1011,52 @@ class HyperliquidDataService {
    */
   async testConnection() {
     try {
-      // Clear demo mode
-      this.disableDemoMode();
+      if (!this.apiKey || !this.apiSecret) {
+        return { 
+          success: false, 
+          message: 'API credentials not configured'
+        };
+      }
       
-      // Try using the HTTP POST JSON-RPC style endpoint
+      // Disable demo mode temporarily for accurate testing
+      const wasDemoActive = this.isDemoActive();
+      if (wasDemoActive) {
+        this.disableDemoMode();
+      }
+      
+      // Test the API connection
       try {
-        const response = await fetch(`${HYPERLIQUID_API_CONFIG.REST_API_URL}/info`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            type: 'meta'
-          })
-        });
+        // Try to get markets data - this will test the real API connection
+        const markets = await this.getMarkets();
         
-        if (!response.ok) {
-          throw new Error(`API request failed with status ${response.status}: ${response.statusText}`);
-        }
-        
-        const data = await response.json();
-        
-        if (data && data.universe && data.universe.length > 0) {
-          const marketCount = data.universe.length;
-          this._updateStatus('connected');
-          
-          // Successfully connected to live API
+        if (markets && markets.length > 0) {
           return {
             success: true,
-            message: `Connected successfully to Hyperliquid API. Found ${marketCount} markets.`,
+            message: `Connected successfully to Hyperliquid API. Found ${markets.length} markets.`,
             isLiveConnection: true
           };
         } else {
-          // Fall back to demo mode
-          this.enableDemoMode();
+          if (wasDemoActive) {
+            this.enableDemoMode();
+          }
           return {
             success: false,
-            message: 'Connected to API but received invalid market data. Falling back to demo mode.'
+            message: 'Connected to API but received invalid market data'
           };
         }
       } catch (apiError) {
-        // API request failed, try one more approach - the exchange endpoint
-        try {
-          const response = await fetch(`${HYPERLIQUID_API_CONFIG.REST_API_URL}/exchange/v1/all_mids`, {
-            method: 'GET',
-            headers: HYPERLIQUID_API_CONFIG.DEFAULT_HEADERS
-          });
-          
-          if (!response.ok) {
-            throw new Error(`Exchange API request failed with status ${response.status}: ${response.statusText}`);
-          }
-          
-          const data = await response.json();
-          
-          if (data && Object.keys(data).length > 0) {
-            const marketCount = Object.keys(data).length;
-            this._updateStatus('connected');
-            
-            // Successfully connected to live API
-            return {
-              success: true,
-              message: `Connected successfully to Hyperliquid Exchange API. Found ${marketCount} markets.`,
-              isLiveConnection: true
-            };
-          } else {
-            // Fall back to demo mode
-            this.enableDemoMode();
-            return {
-              success: false,
-              message: 'Connected to Exchange API but received invalid market data. Falling back to demo mode.'
-            };
-          }
-        } catch (exchangeError) {
-          // Both API approaches failed, enable demo mode
-          console.error('All API connection attempts failed:', apiError, exchangeError);
+        if (wasDemoActive) {
           this.enableDemoMode();
-          return {
-            success: false,
-            message: `API request failed: ${apiError.message}. Falling back to demo mode.`
-          };
         }
+        return {
+          success: false,
+          message: `API request failed: ${apiError.message}`
+        };
       }
     } catch (error) {
-      // General error, enable demo mode
-      this.enableDemoMode();
       return {
         success: false,
-        message: `Connection test failed: ${error.message}. Falling back to demo mode.`
+        message: `Connection test failed: ${error.message}`
       };
     }
   }
