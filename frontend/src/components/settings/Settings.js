@@ -29,7 +29,7 @@ const Settings = () => {
     isLive: hyperliquidDataService.isLiveConnection()
   });
   
-  // Load settings on component mount
+  // Load settings on component mount and set up status checking
   useEffect(() => {
     const loadSettings = async () => {
       if (window.electronAPI) {
@@ -46,7 +46,20 @@ const Settings = () => {
       }
     };
     
+    // Set up a regular check for connection status
+    const statusInterval = setInterval(() => {
+      setConnectionStatus(prevState => ({
+        ...prevState,
+        isLive: hyperliquidDataService.isLiveConnection()
+      }));
+    }, 2000);
+    
     loadSettings();
+    
+    // Clean up on unmount
+    return () => {
+      clearInterval(statusInterval);
+    };
   }, []);
   
   // Save settings
