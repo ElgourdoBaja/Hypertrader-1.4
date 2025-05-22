@@ -459,23 +459,35 @@ class HyperliquidDataService {
    * @param {string} subscriptionId - Subscription ID to cancel
    */
   unsubscribeFromMarketData(subscriptionId) {
-    if (this.subscriptions.has(subscriptionId)) {
-      const [channel, symbol] = subscriptionId.split(':');
-      
-      // Send unsubscribe message to WebSocket
-      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-        const unsubscribeMessage = {
-          op: 'unsubscribe',
-          channel: channel,
-          markets: [symbol]
-        };
-        
-        this.ws.send(JSON.stringify(unsubscribeMessage));
-      }
-      
-      this.subscriptions.delete(subscriptionId);
-      console.log(`Unsubscribed from ${subscriptionId}`);
+    if (!this.subscriptions.has(subscriptionId)) {
+      console.warn(`Tried to unsubscribe from ${subscriptionId} but no such subscription exists`);
+      return;
     }
+    
+    const [channel, symbol] = subscriptionId.split(':');
+    
+    // If in live mode and WebSocket is connected, send unsubscribe message
+    if (!this.isDemoActive() && this.ws && this.ws.readyState === WebSocket.OPEN) {
+      console.log(`Unsubscribing from LIVE ${subscriptionId} data via WebSocket`);
+      
+      const unsubscribeMessage = {
+        op: 'unsubscribe',
+        channel: channel,
+        markets: [symbol]
+      };
+      
+      try {
+        this.ws.send(JSON.stringify(unsubscribeMessage));
+      } catch (error) {
+        console.error(`Error unsubscribing from ${subscriptionId} via WebSocket:`, error);
+      }
+    } else if (this.isDemoActive()) {
+      console.log(`Unsubscribing from DEMO ${subscriptionId} data`);
+      // In demo mode, just remove the subscription
+    }
+    
+    // Remove subscription from map
+    this.subscriptions.delete(subscriptionId);
   }
   
   /**
