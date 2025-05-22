@@ -760,7 +760,7 @@ class HyperliquidDataService {
    * @returns {boolean} True if connected to real API
    */
   isLiveConnection() {
-    return this.connectionStatus === 'connected' && !this.demoMode;
+    return this.connectionStatus === 'connected' && !this.isDemoActive();
   }
   
   /**
