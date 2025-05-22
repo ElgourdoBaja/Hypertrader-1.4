@@ -466,6 +466,12 @@ class HyperliquidDataService {
    * @private
    */
   async _apiRequest(endpoint, data = {}, method = 'GET') {
+    // If in demo mode, return simulated data
+    if (this.isDemoActive()) {
+      return this._getSimulatedData(endpoint, data);
+    }
+    
+    // If not in demo mode, make a real API request
     try {
       const url = `${HYPERLIQUID_API_CONFIG.REST_API_URL}/${endpoint}`;
       
@@ -520,6 +526,7 @@ class HyperliquidDataService {
           requestOptions.body = JSON.stringify(requestData);
         }
         
+        // Make the non-GET request
         const response = await fetch(url, requestOptions);
         
         if (!response.ok) {
@@ -532,6 +539,42 @@ class HyperliquidDataService {
       this.defaultErrorHandler(error);
       throw error;
     }
+  }
+  
+  /**
+   * Generate simulated data for demo mode
+   * @param {string} endpoint - API endpoint
+   * @param {Object} data - Request parameters
+   * @returns {Promise<Object>} Simulated response data
+   * @private
+   */
+  async _getSimulatedData(endpoint, data = {}) {
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 300 + Math.random() * 200));
+    
+    console.log(`Generating simulated data for endpoint: ${endpoint}`);
+    
+    const symbol = data.symbol || (data.coin ? `${data.coin}-PERP` : 'BTC-PERP');
+    
+    // Handle different endpoint types
+    if (endpoint.includes('candles') || endpoint.includes('klines')) {
+      return this._getSimulatedCandles(symbol, data.interval || '1h', data.limit || 200);
+    } 
+    else if (endpoint.includes('ticker')) {
+      return this._getSimulatedTicker(symbol);
+    } 
+    else if (endpoint.includes('orderbook') || endpoint.includes('depth')) {
+      return this._getSimulatedOrderBook(symbol, data.limit || 10);
+    } 
+    else if (endpoint.includes('trades')) {
+      return this._getSimulatedTrades(symbol, data.limit || 50);
+    }
+    else if (endpoint.includes('markets')) {
+      return this._getSimulatedMarkets();
+    }
+    
+    // Default empty response
+    return {};
   }
   
   /**
