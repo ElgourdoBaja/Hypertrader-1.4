@@ -829,4 +829,7 @@ class HyperliquidDataService {
 // Create a singleton instance
 const hyperliquidDataService = new HyperliquidDataService();
 
+// Initialize the service with demo mode by default
+hyperliquidDataService.initialize();
+
 export default hyperliquidDataService;// Test comment
