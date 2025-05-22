@@ -485,11 +485,21 @@ class HyperliquidDataService {
    */
   async getMarkets() {
     try {
-      const response = await this._apiRequest('info/meta');
+      // Use the getMetaAndAssetCtxs endpoint
+      const response = await fetch(`${HYPERLIQUID_API_CONFIG.REST_API_URL}/info/getMetaAndAssetCtxs`, {
+        method: 'GET',
+        headers: HYPERLIQUID_API_CONFIG.DEFAULT_HEADERS
+      });
       
-      if (response && response.universe) {
+      if (!response.ok) {
+        throw new Error(`API request failed with status ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data && data.universe) {
         // Transform the response into a format the app expects
-        return response.universe.map(market => ({
+        return data.universe.map(market => ({
           symbol: market.name + '-PERP',
           baseAsset: market.name,
           quoteAsset: 'USD',
@@ -500,9 +510,20 @@ class HyperliquidDataService {
         }));
       }
       
+      // If we can't get real data, enable demo mode
+      if (!this.demoMode) {
+        this.enableDemoMode();
+      }
+      
       return [];
     } catch (error) {
       this.defaultErrorHandler(error);
+      
+      // If we hit an error, enable demo mode
+      if (!this.demoMode) {
+        this.enableDemoMode();
+      }
+      
       return [];
     }
   }
