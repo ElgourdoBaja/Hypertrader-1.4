@@ -1,6 +1,6 @@
 // Define the API key and configuration for Hyperliquid API
 export const HYPERLIQUID_API_CONFIG = {
-  REST_API_URL: 'https://api.hyperliquid.xyz/api/v1',
+  REST_API_URL: 'https://api.hyperliquid.xyz',
   WS_API_URL: 'wss://api.hyperliquid.xyz/ws',
   DEFAULT_HEADERS: {
     'Content-Type': 'application/json'
