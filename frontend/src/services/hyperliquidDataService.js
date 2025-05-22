@@ -1193,18 +1193,89 @@ class HyperliquidDataService {
   }
   
   /**
-   * Disable demo mode and use real API data
+   * Check if demo mode is currently active
+   * @returns {boolean} True if demo mode is active
    */
-  disableDemoMode() {
-    console.log('Disabling demo mode...');
+  isDemoActive() {
+    return this.mode === API_MODES.DEMO;
+  }
+  
+  /**
+   * Check if live mode is currently active
+   * @returns {boolean} True if live mode is active
+   */
+  isLiveActive() {
+    return this.mode === API_MODES.LIVE;
+  }
+  
+  /**
+   * Force demo mode for testing without API
+   */
+  enableDemoMode() {
+    console.log('Manually enabling DEMO MODE...');
+    this._setMode(API_MODES.DEMO);
+  }
+  
+  /**
+   * Enable live mode and use real API data
+   */
+  enableLiveMode() {
+    console.log('Attempting to enable LIVE MODE...');
     
-    // Clear any existing demo intervals
-    this._clearDemoIntervals();
+    // Check if we have API credentials
+    if (!this.apiKey || !this.apiSecret) {
+      console.error('Cannot enable LIVE MODE: No API credentials provided');
+      return;
+    }
     
-    // Set demo mode flag to false
-    this.demoMode = false;
+    // Set mode to LIVE - this will trigger connection to real API
+    this._setMode(API_MODES.LIVE);
+  }
+  
+  /**
+   * Stop all demo data simulations
+   * @private
+   */
+  _stopAllSimulations() {
+    if (this.demoIntervals && this.demoIntervals.length > 0) {
+      console.log(`Stopping ${this.demoIntervals.length} demo simulations...`);
+      
+      // Clear all interval timers
+      this.demoIntervals.forEach(interval => {
+        if (interval) {
+          clearInterval(interval);
+        }
+      });
+      
+      // Reset the intervals array
+      this.demoIntervals = [];
+      
+      console.log('All demo simulations stopped');
+    }
+  }
+  
+  /**
+   * Start demo data simulations
+   * @private
+   */
+  _startSimulations() {
+    // Don't start simulations if not in demo mode
+    if (!this.isDemoActive()) {
+      console.warn('Not starting simulations because not in DEMO MODE');
+      return;
+    }
     
-    console.log('Demo mode disabled - using real API data');
+    console.log('Starting demo data simulations...');
+    
+    // Make sure no existing simulations are running
+    this._stopAllSimulations();
+    
+    // Create simulation intervals for different data types
+    this._createTickerSimulation();
+    this._createOrderBookSimulation();
+    this._createTradesSimulation();
+    
+    console.log(`Started ${this.demoIntervals.length} demo simulations`);
   }
   
   /**
