@@ -5,6 +5,9 @@ import "./App.css";
 // Services
 import hyperliquidDataService from "./services/hyperliquidDataService";
 
+// Utils
+import { initializeApiModeDebugger } from "./utils/apiModeDebugger";
+
 // Components
 import Sidebar from "./components/common/Sidebar";
 import Header from "./components/common/Header";
