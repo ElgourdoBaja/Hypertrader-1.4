@@ -155,6 +155,26 @@ const Settings = () => {
               >
                 {connectionStatus.testing ? 'Testing...' : 'Test Connection'}
               </button>
+              
+              <button 
+                className={`btn ${connectionStatus.isLive ? 'btn-warning' : 'btn-success'}`}
+                onClick={() => {
+                  if (connectionStatus.isLive) {
+                    // Enable demo mode
+                    hyperliquidDataService.enableDemoMode();
+                    setConnectionStatus({
+                      ...connectionStatus,
+                      isLive: false
+                    });
+                  } else {
+                    // Disable demo mode and try to connect to real API
+                    hyperliquidDataService.disableDemoMode();
+                    testApiConnection();
+                  }
+                }}
+              >
+                {connectionStatus.isLive ? 'Switch to Demo Mode' : 'Switch to Live Mode'}
+              </button>
             </div>
             
             {connectionStatus.result && (
