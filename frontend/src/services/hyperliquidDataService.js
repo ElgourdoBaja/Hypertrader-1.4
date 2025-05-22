@@ -119,10 +119,10 @@ class HyperliquidDataService {
   
   /**
    * Check if demo mode is currently active
-   * @returns {boolean} True if demo mode is active and demo data is being generated
+   * @returns {boolean} True if demo mode is active
    */
   isDemoActive() {
-    return this.demoMode && this.demoIntervals && this.demoIntervals.length > 0;
+    return this.demoMode === true;
   }
   
   /**
