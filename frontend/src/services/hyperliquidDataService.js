@@ -868,14 +868,12 @@ class HyperliquidDataService {
     
     this._updateStatus('disconnected');
     this.demoMode = true;
-    console.log('Demo mode enabled');
-    
-    // Start demo data simulation
     this._simulateWebSocketData();
+    console.log('Demo mode enabled - using simulated data');
   }
   
   /**
-   * Disable demo mode
+   * Disable demo mode and use real API data
    */
   disableDemoMode() {
     // Clear any existing demo intervals
@@ -885,7 +883,7 @@ class HyperliquidDataService {
     }
     
     this.demoMode = false;
-    console.log('Demo mode disabled');
+    console.log('Demo mode disabled - using real API data');
   }
   
   /**
