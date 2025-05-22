@@ -172,7 +172,11 @@ const Settings = () => {
                     hyperliquidDataService.enableDemoMode();
                     setConnectionStatus({
                       ...connectionStatus,
-                      isLive: false
+                      isLive: false,
+                      result: {
+                        success: true,
+                        message: 'Switched to demo mode with simulated data.'
+                      }
                     });
                   } else {
                     // Disable demo mode and try to connect to real API
