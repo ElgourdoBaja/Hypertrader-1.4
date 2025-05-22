@@ -429,18 +429,28 @@ class HyperliquidDataService {
     // Store subscription
     this.subscriptions.set(subscriptionId, callback);
     
-    // Send subscription message to WebSocket
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+    // If in live mode, send subscription message to WebSocket
+    if (!this.isDemoActive() && this.ws && this.ws.readyState === WebSocket.OPEN) {
+      console.log(`Subscribing to LIVE ${subscriptionId} data via WebSocket`);
+      
       const subscribeMessage = {
         op: 'subscribe',
         channel: channel,
         markets: [symbol]
       };
       
-      this.ws.send(JSON.stringify(subscribeMessage));
+      try {
+        this.ws.send(JSON.stringify(subscribeMessage));
+      } catch (error) {
+        console.error(`Error subscribing to ${subscriptionId} via WebSocket:`, error);
+      }
+    } else if (this.isDemoActive()) {
+      console.log(`Subscribing to DEMO ${subscriptionId} data via simulation`);
+      // In demo mode, the simulation intervals will pick up this subscription
+    } else {
+      console.warn(`WebSocket not connected but tried to subscribe to ${subscriptionId}`);
     }
     
-    console.log(`Subscribed to ${subscriptionId}`);
     return subscriptionId;
   }
   
