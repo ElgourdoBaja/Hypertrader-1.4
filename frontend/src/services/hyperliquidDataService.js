@@ -771,6 +771,11 @@ class HyperliquidDataService {
     };
   }
   async getMarkets() {
+    // If we're explicitly in demo mode, use simulated data
+    if (this.isDemoActive()) {
+      return this._getSimulatedMarkets().markets;
+    }
+    
     try {
       // First try the info endpoint
       try {
@@ -791,6 +796,13 @@ class HyperliquidDataService {
         const data = await response.json();
         
         if (data && data.universe) {
+          // Successfully connected to API - ensure demo mode is disabled
+          if (this.demoMode) {
+            console.log('Real API connection confirmed - disabling demo mode');
+            this.disableDemoMode();
+            this._updateStatus('connected');
+          }
+          
           // Transform the response into a format the app expects
           return data.universe.map(market => ({
             symbol: market.name + '-PERP',
@@ -799,14 +811,14 @@ class HyperliquidDataService {
             status: 'TRADING',
             minOrderSize: market.minSize || 0.001,
             tickSize: market.tickSize || 0.01,
-            minNotional: market.minNotional || 1
+            minNotional: market.minNotional || 10
           }));
         }
       } catch (error) {
         console.error('Error fetching markets from info endpoint:', error);
       }
       
-      // If the first approach fails, try the exchange endpoint
+      // Fallback to exchange endpoint
       try {
         const response = await fetch(`${HYPERLIQUID_API_CONFIG.REST_API_URL}/exchange/v1/all_mids`, {
           method: 'GET',
@@ -814,43 +826,52 @@ class HyperliquidDataService {
         });
         
         if (!response.ok) {
-          throw new Error(`Exchange API request failed with status ${response.status}: ${response.statusText}`);
+          throw new Error(`API request failed with status ${response.status}: ${response.statusText}`);
         }
         
         const data = await response.json();
         
-        if (data && Object.keys(data).length > 0) {
+        if (data) {
+          // Successfully connected to API - ensure demo mode is disabled
+          if (this.demoMode) {
+            console.log('Real API connection confirmed - disabling demo mode');
+            this.disableDemoMode();
+            this._updateStatus('connected');
+          }
+          
           // Transform the response into a format the app expects
-          return Object.keys(data).map(name => ({
-            symbol: name + '-PERP',
-            baseAsset: name,
+          return Object.keys(data).map(symbol => ({
+            symbol: symbol + '-PERP',
+            baseAsset: symbol,
             quoteAsset: 'USD',
             status: 'TRADING',
             minOrderSize: 0.001,
             tickSize: 0.01,
-            minNotional: 1
+            minNotional: 10
           }));
         }
       } catch (error) {
         console.error('Error fetching markets from exchange endpoint:', error);
       }
       
-      // If we can't get real data, enable demo mode
+      // If we reach here, we couldn't get market data from the API
+      // Ensure demo mode is enabled and return simulated data
       if (!this.isDemoActive()) {
+        console.warn('Failed to fetch markets from API, falling back to demo mode');
         this.enableDemoMode();
       }
       
-      // Return an empty array and let the demo mode handle it
-      return [];
+      return this._getSimulatedMarkets().markets;
     } catch (error) {
       this.defaultErrorHandler(error);
       
-      // If we hit an error, enable demo mode
+      // Ensure demo mode is enabled and return simulated data
       if (!this.isDemoActive()) {
+        console.warn('Error fetching markets, falling back to demo mode');
         this.enableDemoMode();
       }
       
-      return [];
+      return this._getSimulatedMarkets().markets;
     }
   }
   
