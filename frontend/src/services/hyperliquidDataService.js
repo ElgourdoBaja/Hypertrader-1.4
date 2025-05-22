@@ -408,15 +408,25 @@ class HyperliquidDataService {
       
       const headers = {
         ...HYPERLIQUID_API_CONFIG.DEFAULT_HEADERS,
-        'X-API-Key': this.apiKey
       };
       
-      // Add timestamp and signature for authenticated requests
-      const timestamp = Date.now();
-      data.timestamp = timestamp;
+      // Add API key if available
+      if (this.apiKey) {
+        headers['X-API-Key'] = this.apiKey;
+      }
       
-      const signature = this._signRequest(data);
-      headers['X-API-Signature'] = signature;
+      // Add timestamp for authenticated requests
+      const timestamp = Date.now();
+      const requestData = {
+        ...data,
+        timestamp
+      };
+      
+      // Add signature for authenticated requests if we have an API secret
+      if (this.apiSecret) {
+        const signature = this._signRequest(requestData);
+        headers['X-API-Signature'] = signature;
+      }
       
       const requestOptions = {
         method,
@@ -424,18 +434,37 @@ class HyperliquidDataService {
         credentials: 'omit' // Don't send cookies
       };
       
-      // Add request body for non-GET requests
-      if (method !== 'GET') {
-        requestOptions.body = JSON.stringify(data);
+      // For GET requests, append query parameters to URL
+      if (method === 'GET' && Object.keys(requestData).length > 0) {
+        const queryParams = new URLSearchParams();
+        Object.entries(requestData).forEach(([key, value]) => {
+          queryParams.append(key, value);
+        });
+        const queryString = queryParams.toString();
+        const urlWithParams = `${url}${url.includes('?') ? '&' : '?'}${queryString}`;
+        
+        // Make the GET request
+        const response = await fetch(urlWithParams, requestOptions);
+        
+        if (!response.ok) {
+          throw new Error(`API request failed with status ${response.status}: ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } else {
+        // For non-GET requests, add the data to the request body
+        if (method !== 'GET') {
+          requestOptions.body = JSON.stringify(requestData);
+        }
+        
+        const response = await fetch(url, requestOptions);
+        
+        if (!response.ok) {
+          throw new Error(`API request failed with status ${response.status}: ${response.statusText}`);
+        }
+        
+        return await response.json();
       }
-      
-      const response = await fetch(url, requestOptions);
-      
-      if (!response.ok) {
-        throw new Error(`API request failed with status ${response.status}: ${response.statusText}`);
-      }
-      
-      return await response.json();
     } catch (error) {
       this.defaultErrorHandler(error);
       throw error;
