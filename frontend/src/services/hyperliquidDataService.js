@@ -1121,17 +1121,26 @@ class HyperliquidDataService {
    * @private
    */
   _simulateWebSocketData() {
-    if (!this.demoMode) return;
+    console.log('Starting WebSocket data simulation...');
+    if (!this.demoMode) {
+      console.warn('Simulation requested but demo mode is not active. Aborting.');
+      return;
+    }
     
-    // Simulate ticker updates
-    this.demoIntervals = this.demoIntervals || [];
+    // Clear any existing intervals first
+    this._clearDemoIntervals();
     
-    // Clear any existing intervals
-    this.demoIntervals.forEach(interval => clearInterval(interval));
+    // Create a new array for demo intervals
     this.demoIntervals = [];
     
     // Simulate ticker updates
     this.demoIntervals.push(setInterval(() => {
+      // Double check we're still in demo mode
+      if (!this.demoMode) {
+        this._clearDemoIntervals();
+        return;
+      }
+      
       this.subscriptions.forEach((callback, subscriptionId) => {
         if (subscriptionId.startsWith('ticker:')) {
           const symbol = subscriptionId.split(':')[1];
@@ -1158,6 +1167,12 @@ class HyperliquidDataService {
 
     // Simulate orderbook updates
     this.demoIntervals.push(setInterval(() => {
+      // Double check we're still in demo mode
+      if (!this.demoMode) {
+        this._clearDemoIntervals();
+        return;
+      }
+      
       this.subscriptions.forEach((callback, subscriptionId) => {
         if (subscriptionId.startsWith('orderbook:')) {
           const symbol = subscriptionId.split(':')[1];
@@ -1190,6 +1205,12 @@ class HyperliquidDataService {
     
     // Simulate trade updates
     this.demoIntervals.push(setInterval(() => {
+      // Double check we're still in demo mode
+      if (!this.demoMode) {
+        this._clearDemoIntervals();
+        return;
+      }
+      
       this.subscriptions.forEach((callback, subscriptionId) => {
         if (subscriptionId.startsWith('trades:')) {
           const symbol = subscriptionId.split(':')[1];
@@ -1219,6 +1240,24 @@ class HyperliquidDataService {
         }
       });
     }, 3000));
+    
+    console.log(`Started ${this.demoIntervals.length} demo data simulation intervals`);
+  }
+  
+  /**
+   * Clear all demo intervals
+   * @private
+   */
+  _clearDemoIntervals() {
+    if (this.demoIntervals && this.demoIntervals.length > 0) {
+      console.log(`Clearing ${this.demoIntervals.length} demo intervals`);
+      this.demoIntervals.forEach(interval => {
+        if (interval) {
+          clearInterval(interval);
+        }
+      });
+      this.demoIntervals = [];
+    }
   }
 }
 
