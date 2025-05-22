@@ -44,9 +44,17 @@ class HyperliquidDataService {
       this.statusListeners.push(options.onStatusChange);
     }
     
+    // Start in demo mode by default
+    this.demoMode = true;
+    this._simulateWebSocketData();
+    
     // Connect to WebSocket if credentials are provided
     if (this.apiKey && this.apiSecret) {
-      return this.connectWebSocket();
+      const connected = await this.connectWebSocket();
+      if (connected) {
+        this.demoMode = false; // Disable demo mode if successfully connected
+      }
+      return connected;
     }
     
     return true;
