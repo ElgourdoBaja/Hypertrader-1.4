@@ -49,34 +49,54 @@ class HyperliquidDataService {
     this.demoIntervals = [];
     this._simulateWebSocketData();
     
-    // Connect to WebSocket if credentials are provided
-    if (this.apiKey && this.apiSecret) {
+    // Test API connection
+    try {
+      // Try the info endpoint
       try {
-        const connected = await this.connectWebSocket();
-        if (connected) {
-          // Test the actual API connection
-          try {
-            const response = await fetch(`${HYPERLIQUID_API_CONFIG.REST_API_URL}/info/getMetaAndAssetCtxs`, {
-              method: 'GET',
-              headers: HYPERLIQUID_API_CONFIG.DEFAULT_HEADERS
-            });
-            
-            if (response.ok) {
-              const data = await response.json();
-              if (data && data.universe && data.universe.length > 0) {
-                // If we can connect to the real API, disable demo mode
-                this.disableDemoMode();
-                this._updateStatus('connected');
-                return true;
-              }
-            }
-          } catch (error) {
-            console.error('API connection test failed:', error);
+        const response = await fetch(`${HYPERLIQUID_API_CONFIG.REST_API_URL}/info`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            type: 'meta'
+          })
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data && data.universe && data.universe.length > 0) {
+            // Successfully connected to the API
+            this.disableDemoMode();
+            this._updateStatus('connected');
+            return true;
           }
         }
       } catch (error) {
-        console.error('WebSocket connection failed:', error);
+        console.error('Error connecting to API info endpoint:', error);
       }
+      
+      // Try the exchange endpoint
+      try {
+        const response = await fetch(`${HYPERLIQUID_API_CONFIG.REST_API_URL}/exchange/v1/all_mids`, {
+          method: 'GET',
+          headers: HYPERLIQUID_API_CONFIG.DEFAULT_HEADERS
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data && Object.keys(data).length > 0) {
+            // Successfully connected to the API
+            this.disableDemoMode();
+            this._updateStatus('connected');
+            return true;
+          }
+        }
+      } catch (error) {
+        console.error('Error connecting to API exchange endpoint:', error);
+      }
+    } catch (error) {
+      console.error('Error during API connection test:', error);
     }
     
     // If we couldn't connect to the real API, ensure demo mode is enabled
