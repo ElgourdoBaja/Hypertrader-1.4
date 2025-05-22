@@ -691,6 +691,131 @@ class HyperliquidDataService {
   isLiveConnection() {
     return this.connectionStatus === 'connected' && this.apiKey && this.apiSecret;
   }
+  
+  /**
+   * Force demo mode for testing without API
+   */
+  enableDemoMode() {
+    this._updateStatus('disconnected');
+    this.demoMode = true;
+    console.log('Demo mode enabled');
+    
+    // Start demo data simulation
+    this._simulateWebSocketData();
+  }
+  
+  /**
+   * Disable demo mode
+   */
+  disableDemoMode() {
+    this.demoMode = false;
+    console.log('Demo mode disabled');
+  }
+  
+  /**
+   * Simulate WebSocket data for development
+   * @private
+   */
+  _simulateWebSocketData() {
+    if (!this.demoMode) return;
+    
+    // Simulate ticker updates
+    this.demoIntervals = this.demoIntervals || [];
+    
+    // Clear any existing intervals
+    this.demoIntervals.forEach(interval => clearInterval(interval));
+    this.demoIntervals = [];
+    
+    // Simulate ticker updates
+    this.demoIntervals.push(setInterval(() => {
+      this.subscriptions.forEach((callback, subscriptionId) => {
+        if (subscriptionId.startsWith('ticker:')) {
+          const symbol = subscriptionId.split(':')[1];
+          const basePrice = symbol === 'BTC-PERP' ? 58000 : 
+                          symbol === 'ETH-PERP' ? 3200 : 
+                          symbol === 'SOL-PERP' ? 145 : 100;
+          
+          const randomChange = (Math.random() * 2 - 1) * 0.001; // +/- 0.1%
+          const price = basePrice * (1 + randomChange);
+          
+          const tickerData = {
+            symbol,
+            lastPrice: price,
+            bidPrice: price * 0.9995,
+            askPrice: price * 1.0005,
+            volume: Math.random() * 10000,
+            timestamp: Date.now()
+          };
+          
+          callback(tickerData);
+        }
+      });
+    }, 1000));
+
+    // Simulate orderbook updates
+    this.demoIntervals.push(setInterval(() => {
+      this.subscriptions.forEach((callback, subscriptionId) => {
+        if (subscriptionId.startsWith('orderbook:')) {
+          const symbol = subscriptionId.split(':')[1];
+          const basePrice = symbol === 'BTC-PERP' ? 58000 : 
+                          symbol === 'ETH-PERP' ? 3200 : 
+                          symbol === 'SOL-PERP' ? 145 : 100;
+          
+          const bids = [];
+          const asks = [];
+          
+          for (let i = 0; i < 10; i++) {
+            const bidPrice = basePrice * (1 - 0.0001 * (i + 1));
+            const askPrice = basePrice * (1 + 0.0001 * (i + 1));
+            
+            bids.push([bidPrice, Math.random() * 5]);
+            asks.push([askPrice, Math.random() * 5]);
+          }
+          
+          const orderBookData = {
+            symbol,
+            bids,
+            asks,
+            timestamp: Date.now()
+          };
+          
+          callback(orderBookData);
+        }
+      });
+    }, 2000));
+    
+    // Simulate trade updates
+    this.demoIntervals.push(setInterval(() => {
+      this.subscriptions.forEach((callback, subscriptionId) => {
+        if (subscriptionId.startsWith('trades:')) {
+          const symbol = subscriptionId.split(':')[1];
+          const basePrice = symbol === 'BTC-PERP' ? 58000 : 
+                          symbol === 'ETH-PERP' ? 3200 : 
+                          symbol === 'SOL-PERP' ? 145 : 100;
+          
+          const tradeCount = Math.floor(Math.random() * 5) + 1;
+          const trades = [];
+          
+          for (let i = 0; i < tradeCount; i++) {
+            const price = basePrice * (1 + (Math.random() * 0.002 - 0.001));
+            const size = Math.random() * 2;
+            const side = Math.random() > 0.5 ? 'buy' : 'sell';
+            
+            trades.push({
+              id: `trade_${Date.now()}_${i}`,
+              symbol,
+              price,
+              size,
+              side,
+              timestamp: Date.now() - i * 100
+            });
+          }
+          
+          callback(trades);
+        }
+      });
+    }, 3000));
+  }
 }
 
 // Create a singleton instance
