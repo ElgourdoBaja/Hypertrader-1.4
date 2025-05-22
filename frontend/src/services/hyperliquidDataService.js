@@ -725,13 +725,18 @@ class HyperliquidDataService {
    * @returns {boolean} True if connected to real API
    */
   isLiveConnection() {
-    return this.connectionStatus === 'connected' && this.apiKey && this.apiSecret;
+    return this.connectionStatus === 'connected' && !this.demoMode;
   }
   
   /**
    * Force demo mode for testing without API
    */
   enableDemoMode() {
+    // Clear any existing demo intervals
+    if (this.demoIntervals) {
+      this.demoIntervals.forEach(interval => clearInterval(interval));
+    }
+    
     this._updateStatus('disconnected');
     this.demoMode = true;
     console.log('Demo mode enabled');
@@ -744,6 +749,12 @@ class HyperliquidDataService {
    * Disable demo mode
    */
   disableDemoMode() {
+    // Clear any existing demo intervals
+    if (this.demoIntervals) {
+      this.demoIntervals.forEach(interval => clearInterval(interval));
+      this.demoIntervals = [];
+    }
+    
     this.demoMode = false;
     console.log('Demo mode disabled');
   }
