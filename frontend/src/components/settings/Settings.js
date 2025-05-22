@@ -105,6 +105,14 @@ const Settings = () => {
         result: result,
         isLive: result.isLiveConnection || false
       });
+      
+      // Force UI update
+      setTimeout(() => {
+        setConnectionStatus(prevState => ({
+          ...prevState,
+          isLive: hyperliquidDataService.isLiveConnection()
+        }));
+      }, 500);
     } catch (error) {
       setConnectionStatus({
         testing: false,
