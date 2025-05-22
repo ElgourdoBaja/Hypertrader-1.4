@@ -28,11 +28,49 @@ const Trading = () => {
   const chartContainerRef = useRef(null);
   const chartRef = useRef(null);
   
-  // Available symbols
-  const availableSymbols = [
+  // Available symbols - initialize with defaults but will be replaced with API data
+  const [availableSymbols, setAvailableSymbols] = useState([
     'BTC-PERP', 'ETH-PERP', 'SOL-PERP', 'AVAX-PERP', 'NEAR-PERP',
     'ATOM-PERP', 'DOT-PERP', 'MATIC-PERP', 'LINK-PERP', 'UNI-PERP'
-  ];
+  ]);
+  
+  // Fetch available trading symbols from the API when component mounts
+  useEffect(() => {
+    const fetchSymbols = async () => {
+      try {
+        // Import hyperliquidDataService dynamically to avoid circular dependencies
+        const hyperliquidDataService = (await import('../../services/hyperliquidDataService')).default;
+        
+        // Get real market data if we're in live mode
+        if (hyperliquidDataService.isLiveConnection()) {
+          console.log('Fetching real market symbols from API...');
+          const markets = await hyperliquidDataService.getMarkets();
+          
+          if (Array.isArray(markets) && markets.length > 0) {
+            console.log(`Loaded ${markets.length} markets from API`);
+            const symbols = markets.map(market => market.symbol);
+            setAvailableSymbols(symbols);
+            
+            // If the currently selected symbol is not in the new list, select the first one
+            if (!symbols.includes(selectedSymbol) && symbols.length > 0) {
+              setSelectedSymbol(symbols[0]);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching trading symbols:', error);
+      }
+    };
+    
+    fetchSymbols();
+    
+    // Set up a timer to periodically check if we should fetch real market data
+    const symbolsTimer = setInterval(fetchSymbols, 30000); // Check every 30 seconds
+    
+    return () => {
+      clearInterval(symbolsTimer);
+    };
+  }, []);
   
   // Available timeframes
   const availableTimeframes = ['1m', '3m', '5m', '15m', '30m', '1h', '4h', '1d'];
