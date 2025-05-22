@@ -578,9 +578,188 @@ class HyperliquidDataService {
   }
   
   /**
-   * Fetch the list of available trading pairs
-   * @returns {Promise<Array>} List of trading pairs
+   * Get simulated ticker data for a symbol
+   * @param {string} symbol - Market symbol
+   * @returns {Object} Simulated ticker data
+   * @private
    */
+  _getSimulatedTicker(symbol) {
+    const basePrice = symbol.startsWith('BTC') ? 58000 : 
+                    symbol.startsWith('ETH') ? 3200 : 
+                    symbol.startsWith('SOL') ? 145 : 100;
+    
+    const randomChange = (Math.random() * 2 - 1) * 0.01; // +/- 1%
+    const price = basePrice * (1 + randomChange);
+    
+    return {
+      symbol,
+      lastPrice: price,
+      bidPrice: price * 0.9995,
+      askPrice: price * 1.0005,
+      volume: Math.random() * 10000,
+      timestamp: Date.now()
+    };
+  }
+  
+  /**
+   * Get simulated order book data
+   * @param {string} symbol - Market symbol
+   * @param {number} depth - Order book depth
+   * @returns {Object} Simulated order book data
+   * @private
+   */
+  _getSimulatedOrderBook(symbol, depth = 10) {
+    const basePrice = symbol.startsWith('BTC') ? 58000 : 
+                     symbol.startsWith('ETH') ? 3200 : 
+                     symbol.startsWith('SOL') ? 145 : 100;
+    
+    const bids = [];
+    const asks = [];
+    
+    for (let i = 0; i < depth; i++) {
+      const bidPrice = basePrice * (1 - 0.0001 * (i + 1));
+      const askPrice = basePrice * (1 + 0.0001 * (i + 1));
+      
+      bids.push([bidPrice, Math.random() * 5]);
+      asks.push([askPrice, Math.random() * 5]);
+    }
+    
+    return {
+      symbol,
+      bids,
+      asks,
+      timestamp: Date.now()
+    };
+  }
+  
+  /**
+   * Get simulated trades data
+   * @param {string} symbol - Market symbol
+   * @param {number} limit - Number of trades
+   * @returns {Array} Simulated trades data
+   * @private
+   */
+  _getSimulatedTrades(symbol, limit = 50) {
+    const basePrice = symbol.startsWith('BTC') ? 58000 : 
+                     symbol.startsWith('ETH') ? 3200 : 
+                     symbol.startsWith('SOL') ? 145 : 100;
+    
+    const trades = [];
+    
+    for (let i = 0; i < limit; i++) {
+      const price = basePrice * (1 + (Math.random() * 0.002 - 0.001));
+      const size = Math.random() * 2;
+      const side = Math.random() > 0.5 ? 'buy' : 'sell';
+      
+      trades.push({
+        id: `trade_${Date.now() - i * 1000}`,
+        symbol,
+        price,
+        size,
+        side,
+        timestamp: Date.now() - i * 1000
+      });
+    }
+    
+    return {
+      trades
+    };
+  }
+  
+  /**
+   * Get simulated candles data
+   * @param {string} symbol - Market symbol
+   * @param {string} timeframe - Candlestick timeframe
+   * @param {number} limit - Number of candles
+   * @returns {Array} Simulated candles data
+   * @private
+   */
+  _getSimulatedCandles(symbol, timeframe, limit = 200) {
+    const candles = [];
+    const basePrice = symbol.startsWith('BTC') ? 58000 : 
+                     symbol.startsWith('ETH') ? 3200 : 
+                     symbol.startsWith('SOL') ? 145 : 100;
+    
+    const volatility = symbol.startsWith('BTC') ? 0.01 : 
+                      symbol.startsWith('ETH') ? 0.015 : 0.02;
+    
+    const now = Math.floor(Date.now() / 1000);
+    const secondsInCandle = timeframe === '1m' ? 60 :
+                           timeframe === '5m' ? 300 :
+                           timeframe === '15m' ? 900 :
+                           timeframe === '30m' ? 1800 :
+                           timeframe === '1h' ? 3600 :
+                           timeframe === '4h' ? 14400 : 86400;
+    
+    let currentPrice = basePrice;
+    let trend = 0; // -1 for downtrend, 0 for neutral, 1 for uptrend
+    
+    // Generate candles with realistic price movement
+    for (let i = 0; i < limit; i++) {
+      const time = now - (limit - i) * secondsInCandle;
+      
+      // Change trend occasionally to mimic real market behavior
+      if (i % 50 === 0 || (Math.random() < 0.05 && i > 20)) {
+        trend = Math.floor(Math.random() * 3) - 1; // Random value: -1, 0, or 1
+      }
+      
+      // Calculate price change with trend bias
+      const trendBias = trend * volatility * 0.3;
+      const randomChange = (Math.random() * 2 - 1) * volatility + trendBias;
+      
+      // Update price with change
+      currentPrice = currentPrice * (1 + randomChange);
+      
+      // Calculate OHLC values
+      const open = currentPrice;
+      const high = open * (1 + Math.random() * volatility);
+      const low = open * (1 - Math.random() * volatility);
+      const close = Math.max(low, Math.min(high, open * (1 + (Math.random() * 2 - 1) * volatility)));
+      
+      // Generate volume with random spikes
+      const baseVolume = Math.random() * 100 + 50;
+      const volumeSpike = Math.random() < 0.1 ? Math.random() * 5 + 1 : 1;
+      const volume = baseVolume * volumeSpike;
+      
+      candles.push({
+        time,
+        open,
+        high,
+        low,
+        close,
+        volume
+      });
+      
+      // Use the close price as the next candle's basis
+      currentPrice = close;
+    }
+    
+    return {
+      candles
+    };
+  }
+  
+  /**
+   * Get simulated markets data
+   * @returns {Array} Simulated markets data
+   * @private
+   */
+  _getSimulatedMarkets() {
+    return {
+      markets: [
+        { symbol: 'BTC-PERP', baseAsset: 'BTC', quoteAsset: 'USD', status: 'TRADING', minOrderSize: 0.001, tickSize: 0.5, minNotional: 10 },
+        { symbol: 'ETH-PERP', baseAsset: 'ETH', quoteAsset: 'USD', status: 'TRADING', minOrderSize: 0.01, tickSize: 0.05, minNotional: 10 },
+        { symbol: 'SOL-PERP', baseAsset: 'SOL', quoteAsset: 'USD', status: 'TRADING', minOrderSize: 0.1, tickSize: 0.01, minNotional: 10 },
+        { symbol: 'AVAX-PERP', baseAsset: 'AVAX', quoteAsset: 'USD', status: 'TRADING', minOrderSize: 0.1, tickSize: 0.01, minNotional: 10 },
+        { symbol: 'NEAR-PERP', baseAsset: 'NEAR', quoteAsset: 'USD', status: 'TRADING', minOrderSize: 1, tickSize: 0.001, minNotional: 10 },
+        { symbol: 'ATOM-PERP', baseAsset: 'ATOM', quoteAsset: 'USD', status: 'TRADING', minOrderSize: 0.1, tickSize: 0.01, minNotional: 10 },
+        { symbol: 'DOT-PERP', baseAsset: 'DOT', quoteAsset: 'USD', status: 'TRADING', minOrderSize: 0.1, tickSize: 0.01, minNotional: 10 },
+        { symbol: 'MATIC-PERP', baseAsset: 'MATIC', quoteAsset: 'USD', status: 'TRADING', minOrderSize: 1, tickSize: 0.0001, minNotional: 10 },
+        { symbol: 'LINK-PERP', baseAsset: 'LINK', quoteAsset: 'USD', status: 'TRADING', minOrderSize: 0.1, tickSize: 0.01, minNotional: 10 },
+        { symbol: 'UNI-PERP', baseAsset: 'UNI', quoteAsset: 'USD', status: 'TRADING', minOrderSize: 0.1, tickSize: 0.01, minNotional: 10 },
+      ]
+    };
+  }
   async getMarkets() {
     try {
       // First try the info endpoint
