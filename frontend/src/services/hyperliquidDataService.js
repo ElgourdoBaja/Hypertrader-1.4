@@ -1079,6 +1079,14 @@ class HyperliquidDataService {
   }
   
   /**
+   * Check if this is a live connection or demo mode
+   * @returns {boolean} True if connected to real API
+   */
+  isLiveConnection() {
+    return this.connectionStatus === 'connected' && !this.isDemoActive();
+  }
+  
+  /**
    * Force demo mode for testing without API
    */
   enableDemoMode() {
