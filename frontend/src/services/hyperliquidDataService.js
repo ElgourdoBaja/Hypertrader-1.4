@@ -61,80 +61,49 @@ class HyperliquidDataService {
     console.log('Initializing Hyperliquid API service...');
     
     // Stop any existing demo mode simulations
-    this.disableDemoMode();
+    this._stopAllSimulations();
     
+    // Store API credentials
     this.apiKey = options.apiKey;
     this.apiSecret = options.apiSecret;
     
+    // Register status change listener if provided
     if (options.onStatusChange) {
-      this.statusListeners.push(options.onStatusChange);
+      this.addStatusListener(options.onStatusChange);
     }
     
-    // Only try real API if we have credentials
-    if (this.apiKey && this.apiSecret) {
-      console.log('API credentials provided, attempting to connect to real API...');
+    // Check if we have valid API credentials
+    const hasCredentials = !!(this.apiKey && this.apiSecret);
+    
+    if (hasCredentials) {
+      console.log('API credentials provided, attempting to connect to LIVE API...');
       
-      // Test API connection
       try {
-        // Try the info endpoint
-        try {
-          const response = await fetch(`${HYPERLIQUID_API_CONFIG.REST_API_URL}/info`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              type: 'meta'
-            })
-          });
-          
-          if (response.ok) {
-            const data = await response.json();
-            if (data && data.universe && data.universe.length > 0) {
-              // Successfully connected to the API
-              console.log('Successfully connected to Hyperliquid API - LIVE MODE active');
-              this.demoMode = false;
-              this._updateStatus('connected');
-              return true;
-            }
-          }
-        } catch (error) {
-          console.error('Error connecting to API info endpoint:', error);
-        }
+        // Try to connect to the real API
+        const apiConnected = await this._testApiConnection();
         
-        // Try the exchange endpoint as a fallback
-        try {
-          const response = await fetch(`${HYPERLIQUID_API_CONFIG.REST_API_URL}/exchange/v1/all_mids`, {
-            method: 'GET',
-            headers: HYPERLIQUID_API_CONFIG.DEFAULT_HEADERS
-          });
-          
-          if (response.ok) {
-            const data = await response.json();
-            if (data && Object.keys(data).length > 0) {
-              // Successfully connected to the API
-              console.log('Successfully connected to Hyperliquid API - LIVE MODE active');
-              this.demoMode = false;
-              this._updateStatus('connected');
-              return true;
-            }
-          }
-        } catch (error) {
-          console.error('Error connecting to API exchange endpoint:', error);
+        if (apiConnected) {
+          // Successfully connected to the real API
+          console.log('✅ Successfully connected to Hyperliquid API - LIVE MODE activated');
+          this._setMode(API_MODES.LIVE);
+          return true;
+        } else {
+          // Failed to connect to the real API
+          console.warn('❌ Failed to connect to Hyperliquid API with provided credentials');
+          console.log('Falling back to DEMO MODE with simulated data');
+          this._setMode(API_MODES.DEMO);
+          return false;
         }
-        
-        // If we get here, we failed to connect to the API
-        console.warn('Failed to connect to Hyperliquid API, using demo mode');
-        this.enableDemoMode();
-        return false;
       } catch (error) {
         console.error('Error during API connection test:', error);
-        this.enableDemoMode();
+        console.log('Falling back to DEMO MODE with simulated data');
+        this._setMode(API_MODES.DEMO);
         return false;
       }
     } else {
-      console.log('No API credentials provided, using demo mode');
-      this.enableDemoMode();
+      // No credentials provided, use demo mode
+      console.log('No API credentials provided, using DEMO MODE with simulated data');
+      this._setMode(API_MODES.DEMO);
       return true;
     }
   }
