@@ -624,11 +624,15 @@ class HyperliquidDataService {
       
       // Test REST API with a simple endpoint
       try {
-        const markets = await this.getMarkets();
-        if (Array.isArray(markets) && markets.length > 0) {
+        // Use the info/meta endpoint which should always be available
+        const metaResponse = await this._apiRequest('info/meta');
+        
+        if (metaResponse && metaResponse.universe && metaResponse.universe.length > 0) {
+          const marketCount = metaResponse.universe.length;
+          this._updateStatus('connected');
           return {
             success: true,
-            message: `Connected successfully to Hyperliquid API. Found ${markets.length} markets.`,
+            message: `Connected successfully to Hyperliquid API. Found ${marketCount} markets.`,
             isLiveConnection: true
           };
         } else {
