@@ -109,11 +109,65 @@ class HyperliquidDataService {
   }
   
   /**
-   * Check if demo mode is currently active
-   * @returns {boolean} True if demo mode is active
+   * Test connection to the Hyperliquid API
+   * @returns {Promise<boolean>} True if connection succeeds
+   * @private
    */
-  isDemoActive() {
-    return this.demoMode === true;
+  async _testApiConnection() {
+    // Update status to connecting
+    this._updateStatus('connecting');
+    
+    // Try the info endpoint first
+    try {
+      console.log('Testing API connection with info endpoint...');
+      const response = await fetch(`${HYPERLIQUID_API_CONFIG.REST_API_URL}/info`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          type: 'meta'
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data.universe && data.universe.length > 0) {
+          // Successfully connected to the API
+          this._updateStatus('connected');
+          console.log('API connection test successful via info endpoint');
+          return true;
+        }
+      }
+    } catch (error) {
+      console.error('Error connecting to API info endpoint:', error);
+    }
+    
+    // Try the exchange endpoint as fallback
+    try {
+      console.log('Testing API connection with exchange endpoint...');
+      const response = await fetch(`${HYPERLIQUID_API_CONFIG.REST_API_URL}/exchange/v1/all_mids`, {
+        method: 'GET',
+        headers: HYPERLIQUID_API_CONFIG.DEFAULT_HEADERS
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data && Object.keys(data).length > 0) {
+          // Successfully connected to the API
+          this._updateStatus('connected');
+          console.log('API connection test successful via exchange endpoint');
+          return true;
+        }
+      }
+    } catch (error) {
+      console.error('Error connecting to API exchange endpoint:', error);
+    }
+    
+    // If we reach here, all connection attempts failed
+    this._updateStatus('error');
+    console.warn('All API connection tests failed');
+    return false;
   }
   
   /**
