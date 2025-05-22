@@ -1062,11 +1062,20 @@ class HyperliquidDataService {
   }
 
   /**
-   * Check if this is a live connection or demo mode
-   * @returns {boolean} True if connected to real API
+   * Get debug information about the current API connection state
+   * @returns {Object} Debug information
    */
-  isLiveConnection() {
-    return this.connectionStatus === 'connected' && !this.isDemoActive();
+  getDebugInfo() {
+    return {
+      connectionStatus: this.connectionStatus,
+      demoMode: this.demoMode,
+      hasCredentials: !!(this.apiKey && this.apiSecret),
+      demoIntervalsActive: this.demoIntervals && this.demoIntervals.length > 0,
+      isLiveMode: this.isLiveConnection(),
+      apiUrl: HYPERLIQUID_API_CONFIG.REST_API_URL,
+      wsUrl: HYPERLIQUID_API_CONFIG.WS_API_URL,
+      timestamp: new Date().toISOString()
+    };
   }
   
   /**
