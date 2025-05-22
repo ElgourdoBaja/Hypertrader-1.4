@@ -702,15 +702,16 @@ class HyperliquidDataService {
       // Clear demo mode
       this.disableDemoMode();
       
-      // Test WebSocket connection (optional)
-      // const wsConnected = await this.connectWebSocket();
-      
-      // Test REST API with a simple endpoint
+      // Try using the HTTP POST JSON-RPC style endpoint
       try {
-        // Use the getMetaAndAssetCtxs endpoint directly
-        const response = await fetch(`${HYPERLIQUID_API_CONFIG.REST_API_URL}/info/getMetaAndAssetCtxs`, {
-          method: 'GET',
-          headers: HYPERLIQUID_API_CONFIG.DEFAULT_HEADERS
+        const response = await fetch(`${HYPERLIQUID_API_CONFIG.REST_API_URL}/info`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            type: 'meta'
+          })
         });
         
         if (!response.ok) {
@@ -738,12 +739,46 @@ class HyperliquidDataService {
           };
         }
       } catch (apiError) {
-        // API request failed, enable demo mode
-        this.enableDemoMode();
-        return {
-          success: false,
-          message: `API request failed: ${apiError.message}. Falling back to demo mode.`
-        };
+        // API request failed, try one more approach - the exchange endpoint
+        try {
+          const response = await fetch(`${HYPERLIQUID_API_CONFIG.REST_API_URL}/exchange/v1/all_mids`, {
+            method: 'GET',
+            headers: HYPERLIQUID_API_CONFIG.DEFAULT_HEADERS
+          });
+          
+          if (!response.ok) {
+            throw new Error(`Exchange API request failed with status ${response.status}: ${response.statusText}`);
+          }
+          
+          const data = await response.json();
+          
+          if (data && Object.keys(data).length > 0) {
+            const marketCount = Object.keys(data).length;
+            this._updateStatus('connected');
+            
+            // Successfully connected to live API
+            return {
+              success: true,
+              message: `Connected successfully to Hyperliquid Exchange API. Found ${marketCount} markets.`,
+              isLiveConnection: true
+            };
+          } else {
+            // Fall back to demo mode
+            this.enableDemoMode();
+            return {
+              success: false,
+              message: 'Connected to Exchange API but received invalid market data. Falling back to demo mode.'
+            };
+          }
+        } catch (exchangeError) {
+          // Both API approaches failed, enable demo mode
+          console.error('All API connection attempts failed:', apiError, exchangeError);
+          this.enableDemoMode();
+          return {
+            success: false,
+            message: `API request failed: ${apiError.message}. Falling back to demo mode.`
+          };
+        }
       }
     } catch (error) {
       // General error, enable demo mode
