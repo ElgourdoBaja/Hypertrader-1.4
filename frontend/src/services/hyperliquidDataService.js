@@ -479,13 +479,27 @@ class HyperliquidDataService {
    */
   async getHistoricalCandles(symbol, timeframe, limit = 200) {
     try {
-      const response = await this._apiRequest('klines', {
-        symbol,
+      const coin = symbol.split('-')[0]; // Extract coin name from symbol (e.g., BTC from BTC-PERP)
+      
+      const response = await this._apiRequest('info/candles', {
+        coin,
         interval: timeframe,
         limit
       });
       
-      return response.candles || [];
+      if (Array.isArray(response)) {
+        // Transform the response into a format the app expects
+        return response.map(candle => ({
+          time: candle.time || candle.timestamp,
+          open: candle.open,
+          high: candle.high,
+          low: candle.low,
+          close: candle.close,
+          volume: candle.volume
+        }));
+      }
+      
+      return [];
     } catch (error) {
       this.defaultErrorHandler(error);
       return [];
@@ -499,8 +513,22 @@ class HyperliquidDataService {
    */
   async getTicker(symbol) {
     try {
-      const response = await this._apiRequest('ticker', { symbol });
-      return response;
+      const coin = symbol.split('-')[0]; // Extract coin name from symbol
+      
+      const response = await this._apiRequest('info/ticker', { coin });
+      
+      if (response) {
+        return {
+          symbol,
+          lastPrice: response.lastPrice || response.last || 0,
+          bidPrice: response.bidPrice || response.bid || 0,
+          askPrice: response.askPrice || response.ask || 0,
+          volume: response.volume || response.baseVolume || 0,
+          timestamp: response.timestamp || Date.now()
+        };
+      }
+      
+      return null;
     } catch (error) {
       this.defaultErrorHandler(error);
       return null;
@@ -515,17 +543,23 @@ class HyperliquidDataService {
    */
   async getOrderBook(symbol, depth = 10) {
     try {
-      const response = await this._apiRequest('depth', {
-        symbol,
+      const coin = symbol.split('-')[0]; // Extract coin name from symbol
+      
+      const response = await this._apiRequest('info/orderbook', {
+        coin,
         limit: depth
       });
       
-      return {
-        symbol,
-        bids: response.bids || [],
-        asks: response.asks || [],
-        timestamp: response.timestamp
-      };
+      if (response) {
+        return {
+          symbol,
+          bids: response.bids || [],
+          asks: response.asks || [],
+          timestamp: response.timestamp || Date.now()
+        };
+      }
+      
+      return null;
     } catch (error) {
       this.defaultErrorHandler(error);
       return null;
@@ -540,12 +574,26 @@ class HyperliquidDataService {
    */
   async getRecentTrades(symbol, limit = 50) {
     try {
-      const response = await this._apiRequest('trades', {
-        symbol,
+      const coin = symbol.split('-')[0]; // Extract coin name from symbol
+      
+      const response = await this._apiRequest('info/trades', {
+        coin,
         limit
       });
       
-      return response.trades || [];
+      if (Array.isArray(response)) {
+        // Transform the response into a format the app expects
+        return response.map(trade => ({
+          id: trade.id || `trade_${Date.now()}_${Math.random()}`,
+          symbol,
+          price: trade.price,
+          size: trade.size || trade.amount,
+          side: trade.side || (trade.buy ? 'buy' : 'sell'),
+          timestamp: trade.timestamp || trade.time || Date.now()
+        }));
+      }
+      
+      return [];
     } catch (error) {
       this.defaultErrorHandler(error);
       return [];
