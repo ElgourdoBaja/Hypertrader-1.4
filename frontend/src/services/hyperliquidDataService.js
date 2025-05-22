@@ -8,6 +8,14 @@ export const HYPERLIQUID_API_CONFIG = {
 };
 
 /**
+ * Mode constants to ensure we use consistent values
+ */
+export const API_MODES = {
+  DEMO: 'demo',
+  LIVE: 'live'
+};
+
+/**
  * Hyperliquid Market Data Service 
  * 
  * This service provides access to real-time and historical market data 
@@ -15,13 +23,26 @@ export const HYPERLIQUID_API_CONFIG = {
  */
 class HyperliquidDataService {
   constructor() {
+    // WebSocket connection
     this.ws = null;
+    
+    // Subscriptions for real-time data
     this.subscriptions = new Map();
+    
+    // Connection status tracking
     this.connectionStatus = 'disconnected'; // 'disconnected', 'connecting', 'connected', 'error'
     this.statusListeners = [];
     this.reconnectAttempts = 0;
     this.maxReconnectAttempts = 5;
     this.reconnectInterval = 2000; // Start with 2s, will increase exponentially
+    
+    // Demo mode management
+    this.mode = API_MODES.DEMO; // Start in demo mode until initialized
+    this.demoIntervals = [];
+    
+    // API credentials
+    this.apiKey = null;
+    this.apiSecret = null;
     
     // Default error handler
     this.defaultErrorHandler = (error) => {
