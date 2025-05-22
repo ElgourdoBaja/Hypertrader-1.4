@@ -544,11 +544,15 @@ class HyperliquidDataService {
    */
   async _apiRequest(endpoint, data = {}, method = 'GET') {
     // If in demo mode, return simulated data
-    if (this.isDemoActive()) {
+    if (this.mode === API_MODES.DEMO) {
+      console.log(`🔶 DEMO MODE: Simulating API request to ${endpoint}`);
       return this._getSimulatedData(endpoint, data);
     }
     
-    // If not in demo mode, make a real API request
+    // Log the real API request
+    console.log(`🟢 LIVE MODE: Making real API request to ${endpoint}`);
+    
+    // Make a real API request
     try {
       const url = `${HYPERLIQUID_API_CONFIG.REST_API_URL}/${endpoint}`;
       
@@ -593,6 +597,8 @@ class HyperliquidDataService {
         const response = await fetch(urlWithParams, requestOptions);
         
         if (!response.ok) {
+          // If the API request fails, log error but don't switch to demo mode
+          console.error(`API request failed with status ${response.status}: ${response.statusText}`);
           throw new Error(`API request failed with status ${response.status}: ${response.statusText}`);
         }
         
@@ -607,6 +613,8 @@ class HyperliquidDataService {
         const response = await fetch(url, requestOptions);
         
         if (!response.ok) {
+          // If the API request fails, log error but don't switch to demo mode
+          console.error(`API request failed with status ${response.status}: ${response.statusText}`);
           throw new Error(`API request failed with status ${response.status}: ${response.statusText}`);
         }
         
@@ -614,6 +622,11 @@ class HyperliquidDataService {
       }
     } catch (error) {
       this.defaultErrorHandler(error);
+      
+      // Log the error but don't automatically switch to demo mode
+      // This allows individual components to decide how to handle API errors
+      console.error(`Error in API request to ${endpoint}:`, error);
+      
       throw error;
     }
   }
