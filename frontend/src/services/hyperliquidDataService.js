@@ -1091,14 +1091,18 @@ class HyperliquidDataService {
    * Force demo mode for testing without API
    */
   enableDemoMode() {
-    // Clear any existing demo intervals
-    if (this.demoIntervals) {
-      this.demoIntervals.forEach(interval => clearInterval(interval));
-    }
+    console.log('Enabling demo mode...');
     
+    // Clear any existing demo intervals
+    this._clearDemoIntervals();
+    
+    // Update status and set demo mode flag
     this._updateStatus('disconnected');
     this.demoMode = true;
+    
+    // Start demo data simulation
     this._simulateWebSocketData();
+    
     console.log('Demo mode enabled - using simulated data');
   }
   
@@ -1106,13 +1110,14 @@ class HyperliquidDataService {
    * Disable demo mode and use real API data
    */
   disableDemoMode() {
-    // Clear any existing demo intervals
-    if (this.demoIntervals) {
-      this.demoIntervals.forEach(interval => clearInterval(interval));
-      this.demoIntervals = [];
-    }
+    console.log('Disabling demo mode...');
     
+    // Clear any existing demo intervals
+    this._clearDemoIntervals();
+    
+    // Set demo mode flag to false
     this.demoMode = false;
+    
     console.log('Demo mode disabled - using real API data');
   }
   
