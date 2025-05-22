@@ -1279,36 +1279,30 @@ class HyperliquidDataService {
   }
   
   /**
-   * Simulate WebSocket data for development
+   * Create ticker data simulation
    * @private
    */
-  _simulateWebSocketData() {
-    console.log('Starting WebSocket data simulation...');
-    if (!this.demoMode) {
-      console.warn('Simulation requested but demo mode is not active. Aborting.');
-      return;
-    }
+  _createTickerSimulation() {
+    // Don't create simulation if not in demo mode
+    if (!this.isDemoActive()) return;
     
-    // Clear any existing intervals first
-    this._clearDemoIntervals();
+    console.log('Creating ticker data simulation...');
     
-    // Create a new array for demo intervals
-    this.demoIntervals = [];
-    
-    // Simulate ticker updates
-    this.demoIntervals.push(setInterval(() => {
-      // Double check we're still in demo mode
-      if (!this.demoMode) {
-        this._clearDemoIntervals();
+    // Create and store the interval
+    const interval = setInterval(() => {
+      // Exit early if no longer in demo mode
+      if (!this.isDemoActive()) {
+        this._stopAllSimulations();
         return;
       }
       
+      // Process all ticker subscriptions
       this.subscriptions.forEach((callback, subscriptionId) => {
         if (subscriptionId.startsWith('ticker:')) {
           const symbol = subscriptionId.split(':')[1];
-          const basePrice = symbol === 'BTC-PERP' ? 58000 : 
-                          symbol === 'ETH-PERP' ? 3200 : 
-                          symbol === 'SOL-PERP' ? 145 : 100;
+          const basePrice = symbol.includes('BTC') ? 58000 : 
+                          symbol.includes('ETH') ? 3200 : 
+                          symbol.includes('SOL') ? 145 : 100;
           
           const randomChange = (Math.random() * 2 - 1) * 0.001; // +/- 0.1%
           const price = basePrice * (1 + randomChange);
@@ -1322,29 +1316,46 @@ class HyperliquidDataService {
             timestamp: Date.now()
           };
           
+          // Send the simulated data to the callback
           callback(tickerData);
         }
       });
-    }, 1000));
-
-    // Simulate orderbook updates
-    this.demoIntervals.push(setInterval(() => {
-      // Double check we're still in demo mode
-      if (!this.demoMode) {
-        this._clearDemoIntervals();
+    }, 1000);
+    
+    // Store the interval for later cleanup
+    this.demoIntervals.push(interval);
+  }
+  
+  /**
+   * Create order book data simulation
+   * @private
+   */
+  _createOrderBookSimulation() {
+    // Don't create simulation if not in demo mode
+    if (!this.isDemoActive()) return;
+    
+    console.log('Creating order book data simulation...');
+    
+    // Create and store the interval
+    const interval = setInterval(() => {
+      // Exit early if no longer in demo mode
+      if (!this.isDemoActive()) {
+        this._stopAllSimulations();
         return;
       }
       
+      // Process all orderbook subscriptions
       this.subscriptions.forEach((callback, subscriptionId) => {
         if (subscriptionId.startsWith('orderbook:')) {
           const symbol = subscriptionId.split(':')[1];
-          const basePrice = symbol === 'BTC-PERP' ? 58000 : 
-                          symbol === 'ETH-PERP' ? 3200 : 
-                          symbol === 'SOL-PERP' ? 145 : 100;
+          const basePrice = symbol.includes('BTC') ? 58000 : 
+                          symbol.includes('ETH') ? 3200 : 
+                          symbol.includes('SOL') ? 145 : 100;
           
           const bids = [];
           const asks = [];
           
+          // Generate simulated order book data
           for (let i = 0; i < 10; i++) {
             const bidPrice = basePrice * (1 - 0.0001 * (i + 1));
             const askPrice = basePrice * (1 + 0.0001 * (i + 1));
@@ -1360,29 +1371,47 @@ class HyperliquidDataService {
             timestamp: Date.now()
           };
           
+          // Send the simulated data to the callback
           callback(orderBookData);
         }
       });
-    }, 2000));
+    }, 2000);
     
-    // Simulate trade updates
-    this.demoIntervals.push(setInterval(() => {
-      // Double check we're still in demo mode
-      if (!this.demoMode) {
-        this._clearDemoIntervals();
+    // Store the interval for later cleanup
+    this.demoIntervals.push(interval);
+  }
+  
+  /**
+   * Create trades data simulation
+   * @private
+   */
+  _createTradesSimulation() {
+    // Don't create simulation if not in demo mode
+    if (!this.isDemoActive()) return;
+    
+    console.log('Creating trades data simulation...');
+    
+    // Create and store the interval
+    const interval = setInterval(() => {
+      // Exit early if no longer in demo mode
+      if (!this.isDemoActive()) {
+        this._stopAllSimulations();
         return;
       }
       
+      // Process all trades subscriptions
       this.subscriptions.forEach((callback, subscriptionId) => {
         if (subscriptionId.startsWith('trades:')) {
           const symbol = subscriptionId.split(':')[1];
-          const basePrice = symbol === 'BTC-PERP' ? 58000 : 
-                          symbol === 'ETH-PERP' ? 3200 : 
-                          symbol === 'SOL-PERP' ? 145 : 100;
+          const basePrice = symbol.includes('BTC') ? 58000 : 
+                          symbol.includes('ETH') ? 3200 : 
+                          symbol.includes('SOL') ? 145 : 100;
           
+          // Generate random number of trades
           const tradeCount = Math.floor(Math.random() * 5) + 1;
           const trades = [];
           
+          // Generate simulated trade data
           for (let i = 0; i < tradeCount; i++) {
             const price = basePrice * (1 + (Math.random() * 0.002 - 0.001));
             const size = Math.random() * 2;
@@ -1398,28 +1427,14 @@ class HyperliquidDataService {
             });
           }
           
+          // Send the simulated data to the callback
           callback(trades);
         }
       });
-    }, 3000));
+    }, 3000);
     
-    console.log(`Started ${this.demoIntervals.length} demo data simulation intervals`);
-  }
-  
-  /**
-   * Clear all demo intervals
-   * @private
-   */
-  _clearDemoIntervals() {
-    if (this.demoIntervals && this.demoIntervals.length > 0) {
-      console.log(`Clearing ${this.demoIntervals.length} demo intervals`);
-      this.demoIntervals.forEach(interval => {
-        if (interval) {
-          clearInterval(interval);
-        }
-      });
-      this.demoIntervals = [];
-    }
+    // Store the interval for later cleanup
+    this.demoIntervals.push(interval);
   }
 }
 
