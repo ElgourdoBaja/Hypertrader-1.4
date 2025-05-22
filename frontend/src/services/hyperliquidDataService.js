@@ -46,18 +46,53 @@ class HyperliquidDataService {
     
     // Start in demo mode by default
     this.demoMode = true;
+    this.demoIntervals = [];
     this._simulateWebSocketData();
     
     // Connect to WebSocket if credentials are provided
     if (this.apiKey && this.apiSecret) {
-      const connected = await this.connectWebSocket();
-      if (connected) {
-        this.demoMode = false; // Disable demo mode if successfully connected
+      try {
+        const connected = await this.connectWebSocket();
+        if (connected) {
+          // Test the actual API connection
+          try {
+            const response = await fetch(`${HYPERLIQUID_API_CONFIG.REST_API_URL}/info/getMetaAndAssetCtxs`, {
+              method: 'GET',
+              headers: HYPERLIQUID_API_CONFIG.DEFAULT_HEADERS
+            });
+            
+            if (response.ok) {
+              const data = await response.json();
+              if (data && data.universe && data.universe.length > 0) {
+                // If we can connect to the real API, disable demo mode
+                this.disableDemoMode();
+                this._updateStatus('connected');
+                return true;
+              }
+            }
+          } catch (error) {
+            console.error('API connection test failed:', error);
+          }
+        }
+      } catch (error) {
+        console.error('WebSocket connection failed:', error);
       }
-      return connected;
+    }
+    
+    // If we couldn't connect to the real API, ensure demo mode is enabled
+    if (!this.isDemoActive()) {
+      this.enableDemoMode();
     }
     
     return true;
+  }
+  
+  /**
+   * Check if demo mode is currently active
+   * @returns {boolean} True if demo mode is active and demo data is being generated
+   */
+  isDemoActive() {
+    return this.demoMode && this.demoIntervals && this.demoIntervals.length > 0;
   }
   
   /**
