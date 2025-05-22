@@ -448,8 +448,22 @@ class HyperliquidDataService {
    */
   async getMarkets() {
     try {
-      const response = await this._apiRequest('markets');
-      return response.markets || [];
+      const response = await this._apiRequest('info/meta');
+      
+      if (response && response.universe) {
+        // Transform the response into a format the app expects
+        return response.universe.map(market => ({
+          symbol: market.name + '-PERP',
+          baseAsset: market.name,
+          quoteAsset: 'USD',
+          status: 'TRADING',
+          minOrderSize: market.minSize || 0.001,
+          tickSize: market.tickSize || 0.01,
+          minNotional: market.minNotional || 1
+        }));
+      }
+      
+      return [];
     } catch (error) {
       this.defaultErrorHandler(error);
       return [];
