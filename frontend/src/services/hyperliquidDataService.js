@@ -664,51 +664,58 @@ class HyperliquidDataService {
    */
   async testConnection() {
     try {
-      if (!this.apiKey || !this.apiSecret) {
-        return { 
-          success: false, 
-          message: 'API credentials not configured'
-        };
-      }
+      // Clear demo mode
+      this.disableDemoMode();
       
-      // Test WebSocket connection
-      const wsConnected = await this.connectWebSocket();
-      if (!wsConnected) {
-        return {
-          success: false,
-          message: 'Failed to connect to WebSocket API'
-        };
-      }
+      // Test WebSocket connection (optional)
+      // const wsConnected = await this.connectWebSocket();
       
       // Test REST API with a simple endpoint
       try {
-        // Use the info/meta endpoint which should always be available
-        const metaResponse = await this._apiRequest('info/meta');
+        // Use the getMetaAndAssetCtxs endpoint directly
+        const response = await fetch(`${HYPERLIQUID_API_CONFIG.REST_API_URL}/info/getMetaAndAssetCtxs`, {
+          method: 'GET',
+          headers: HYPERLIQUID_API_CONFIG.DEFAULT_HEADERS
+        });
         
-        if (metaResponse && metaResponse.universe && metaResponse.universe.length > 0) {
-          const marketCount = metaResponse.universe.length;
+        if (!response.ok) {
+          throw new Error(`API request failed with status ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data && data.universe && data.universe.length > 0) {
+          const marketCount = data.universe.length;
           this._updateStatus('connected');
+          
+          // Successfully connected to live API
           return {
             success: true,
             message: `Connected successfully to Hyperliquid API. Found ${marketCount} markets.`,
             isLiveConnection: true
           };
         } else {
+          // Fall back to demo mode
+          this.enableDemoMode();
           return {
             success: false,
-            message: 'Connected to API but received invalid market data'
+            message: 'Connected to API but received invalid market data. Falling back to demo mode.'
           };
         }
       } catch (apiError) {
+        // API request failed, enable demo mode
+        this.enableDemoMode();
         return {
           success: false,
-          message: `API request failed: ${apiError.message}`
+          message: `API request failed: ${apiError.message}. Falling back to demo mode.`
         };
       }
     } catch (error) {
+      // General error, enable demo mode
+      this.enableDemoMode();
       return {
         success: false,
-        message: `Connection test failed: ${error.message}`
+        message: `Connection test failed: ${error.message}. Falling back to demo mode.`
       };
     }
   }
