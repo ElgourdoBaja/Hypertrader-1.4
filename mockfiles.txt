@@ -1,0 +1,9 @@
+./frontend/src/components/dashboard/TechnicalAnalysis.js
+./frontend/src/components/dashboard/Dashboard.js
+./frontend/src/components/dashboard/PerformanceAnalysis.js
+./frontend/src/components/trading/Backtesting.js
+./frontend/src/components/trading/Trading.js
+./frontend/src/components/trading/PositionManagement.js
+./frontend/src/components/trading/RiskAnalysis.js
+./frontend/src/components/common/NotificationCenter.js
+./frontend/src/App.js
