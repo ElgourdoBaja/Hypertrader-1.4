@@ -1187,11 +1187,11 @@ class HyperliquidDataService {
   }
   
   /**
-   * Force demo mode for testing without API
+   * Enable demo mode (does nothing, always uses live mode)
    */
   enableDemoMode() {
-    console.log('Manually enabling DEMO MODE...');
-    this._setMode(API_MODES.DEMO);
+    console.log('Demo mode is disabled. Always using LIVE mode.');
+    // Do nothing
   }
   
   /**
