@@ -178,8 +178,6 @@ const Trading = () => {
           }
         })();
         
-        volumeSeries.setData(volumeData);
-        
         // Save chart instance to ref
         chartRef.current = {
           chart,
