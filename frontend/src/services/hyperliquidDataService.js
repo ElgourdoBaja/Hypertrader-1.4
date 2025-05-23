@@ -1203,10 +1203,6 @@ class HyperliquidDataService {
   _startSimulations() {
     // Demo mode is disabled, this is a no-op
   }
-    this._createOrderBookSimulation();
-    this._createTradesSimulation();
-    
-    console.log(`Started ${this.demoIntervals.length} demo simulations`);
   }
   
   /**
