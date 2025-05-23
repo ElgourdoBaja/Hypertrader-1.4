@@ -1257,8 +1257,14 @@ class HyperliquidDataService {
       return;
     }
     
+    // Stop all demo simulations
+    this._stopAllSimulations();
+    
     // Set mode to LIVE - this will trigger connection to real API
     this._setMode(API_MODES.LIVE);
+    
+    // Force reload market and account data
+    this._loadData();
   }
   
   /**
