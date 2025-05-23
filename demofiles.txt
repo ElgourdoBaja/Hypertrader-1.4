@@ -1,0 +1,9 @@
+./frontend/src/components/settings/Settings.js
+./frontend/src/components/dashboard/PerformanceAnalysis.js
+./frontend/src/components/trading/Backtesting.js
+./frontend/src/components/trading/Trading.js
+./frontend/src/components/trading/StrategyEditor.js
+./frontend/src/components/common/NotificationCenter.js
+./frontend/src/utils/apiModeDebugger.js
+./frontend/src/services/tradingEngine.js
+./frontend/src/services/hyperliquidDataService.js
