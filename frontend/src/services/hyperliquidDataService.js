@@ -102,9 +102,9 @@ class HyperliquidDataService {
         return true;
       }
     } else {
-      // No credentials provided, use demo mode
-      console.log('No API credentials provided, using DEMO MODE with simulated data');
-      this._setMode(API_MODES.DEMO);
+      // No credentials provided, but still try to use live mode with limited functionality
+      console.log('No API credentials provided, but attempting to use LIVE MODE with limited functionality');
+      this._setMode(API_MODES.LIVE);
       return true;
     }
   }
