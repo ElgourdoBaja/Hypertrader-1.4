@@ -11,7 +11,6 @@ export const HYPERLIQUID_API_CONFIG = {
  * Mode constants to ensure we use consistent values
  */
 export const API_MODES = {
-  DEMO: 'demo',
   LIVE: 'live'
 };
 
