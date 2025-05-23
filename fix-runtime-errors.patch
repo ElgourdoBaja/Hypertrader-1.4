@@ -1,0 +1,309 @@
+From: Assistant <assistant@example.com>
+Date: Tue, 21 May 2024 00:30:00 +0000
+Subject: [PATCH] Fix runtime errors and API data loading
+
+This patch fixes:
+1. getDebugInfo method to handle removed demo mode arrays
+2. Adds proper API methods for real data fetching
+3. Fixes errors in Trading.js component
+
+---
+ src/services/hyperliquidDataService.js | 246 +++++++++++++++++++++++++-------
+ src/components/trading/Trading.js | 92 ++++++++++------
+ 2 files changed, 261 insertions(+), 77 deletions(-)
+
+diff --git a/frontend/src/services/hyperliquidDataService.js b/frontend/src/services/hyperliquidDataService.js
+index aaaaaaa..bbbbbbb 100644
+--- a/frontend/src/services/hyperliquidDataService.js
++++ b/frontend/src/services/hyperliquidDataService.js
+@@ -1044,27 +1044,27 @@ class HyperliquidDataService {
+   }
+ 
+   /**
+    * Get debug information about the current API connection state
+    * @returns {Object} Debug information
+    */
+   getDebugInfo() {
+-    const modeEmoji = this.mode === API_MODES.LIVE ? '🟢' : '🔶';
++    // Always show as live mode
++    const modeEmoji = '🟢';
+     const statusEmoji = this.connectionStatus === 'connected' ? '✅' : 
+                        this.connectionStatus === 'connecting' ? '⏳' :
+                        this.connectionStatus === 'disconnected' ? '⚪' : '❌';
+                        
+     return {
+-      mode: `${modeEmoji} ${this.mode.toUpperCase()}`,
+-      connectionStatus: `${statusEmoji} ${this.connectionStatus}`,
+-      isLiveMode: this.isLiveActive(),
+-      isDemoMode: this.isDemoActive(),
++      mode: `${modeEmoji} LIVE`,
++      connectionStatus: `${statusEmoji} ${this.connectionStatus || 'unknown'}`,
++      isLiveMode: true,
++      isDemoMode: false,
+       hasCredentials: !!(this.apiKey && this.apiSecret),
+-      demoSimulationsActive: this.demoIntervals.length,
+-      subscriptionsCount: this.subscriptions.size,
++      demoSimulationsActive: 0,
++      subscriptionsCount: this.subscriptions ? this.subscriptions.size : 0,
+       apiUrl: HYPERLIQUID_API_CONFIG.REST_API_URL,
+       wsUrl: HYPERLIQUID_API_CONFIG.WS_API_URL,
+       wsStatus: this.ws ? this.ws.readyState : 'no websocket',
+       timestamp: new Date().toISOString(),
+-      versionInfo: 'Hyperliquid Trader v1.0.1'
++      versionInfo: 'Hyperliquid Trader v1.0.2'
+     };
+   }
+   
+@@ -1076,6 +1076,129 @@ class HyperliquidDataService {
+     // Always return true to force live mode regardless of connection status
+     return true;
+   }
++
++  /**
++   * Get candlestick data for a market
++   * @param {string} symbol - Market symbol
++   * @param {string} timeframe - Candle timeframe (e.g., '1m', '5m', '1h', '1d')
++   * @param {number} limit - Number of candles to fetch
++   * @returns {Promise<Array>} Candlestick data
++   */
++  async getCandles(symbol, timeframe, limit = 200) {
++    console.log(`Fetching candle data for ${symbol} with timeframe ${timeframe}`);
++    
++    try {
++      // Make API request to get candles
++      const endpoint = `candles/${symbol}`;
++      const params = {
++        interval: timeframe,
++        limit
++      };
++      
++      const response = await this._apiRequest(endpoint, params);
++      
++      if (Array.isArray(response)) {
++        return response.map(candle => ({
++          time: candle.timestamp / 1000, // Convert to seconds for LightweightCharts
++          open: candle.open,
++          high: candle.high,
++          low: candle.low,
++          close: candle.close,
++          volume: candle.volume
++        }));
++      }
++      
++      console.warn('Invalid response format from candles API:', response);
++      return [];
++    } catch (error) {
++      console.error(`Error fetching candles for ${symbol}:`, error);
++      return [];
++    }
++  }
++
++  /**
++   * Get order book data for a market
++   * @param {string} symbol - Market symbol
++   * @param {number} depth - Order book depth
++   * @returns {Promise<Object>} Order book data
++   */
++  async getOrderBook(symbol, depth = 10) {
++    console.log(`Fetching order book data for ${symbol}`);
++    
++    try {
++      // Make API request to get order book
++      const endpoint = `orderbook/${symbol}`;
++      const params = {
++        depth
++      };
++      
++      const response = await this._apiRequest(endpoint, params);
++      
++      if (response && response.bids && response.asks) {
++        return response;
++      }
++      
++      console.warn('Invalid response format from order book API:', response);
++      return {
++        bids: [],
++        asks: [],
++        timestamp: Date.now()
++      };
++    } catch (error) {
++      console.error(`Error fetching order book for ${symbol}:`, error);
++      return {
++        bids: [],
++        asks: [],
++        timestamp: Date.now()
++      };
++    }
++  }
++
++  /**
++   * Get recent trades for a market
++   * @param {string} symbol - Market symbol
++   * @param {number} limit - Number of trades to fetch
++   * @returns {Promise<Array>} Recent trades data
++   */
++  async getRecentTrades(symbol, limit = 50) {
++    console.log(`Fetching recent trades for ${symbol}`);
++    
++    try {
++      // Make API request to get recent trades
++      const endpoint = `trades/${symbol}`;
++      const params = {
++        limit
++      };
++      
++      const response = await this._apiRequest(endpoint, params);
++      
++      if (Array.isArray(response)) {
++        return response.map(trade => ({
++          id: trade.id || `trade-${Date.now()}-${Math.random()}`,
++          price: trade.price,
++          amount: trade.quantity || trade.amount,
++          side: trade.side.toLowerCase(),
++          timestamp: new Date(trade.time || trade.timestamp)
++        }));
++      }
++      
++      console.warn('Invalid response format from trades API:', response);
++      return [];
++    } catch (error) {
++      console.error(`Error fetching recent trades for ${symbol}:`, error);
++      return [];
++    }
++  }
++
++  /**
++   * Get account information
++   * @returns {Promise<Object>} Account information
++   */
++  async getAccountInfo() {
++    console.log('Fetching account information');
++    
++    try {
++      // Make API request to get account info
++      const response = await this._apiRequest('account');
++      
++      if (response) {
++        return {
++          accountId: response.accountId || '',
++          balance: response.balance || 0,
++          margin: response.margin || 0,
++          available: response.available || 0,
++          totalValue: response.totalValue || 0,
++          dailyPnL: response.dailyPnL || 0,
++          dailyPnLPercent: response.dailyPnLPercent || 0,
++          positions: Array.isArray(response.positions) ? response.positions : [],
++          recentTrades: Array.isArray(response.recentTrades) ? response.recentTrades : []
++        };
++      }
++      
++      console.warn('Invalid response format from account API:', response);
++      return {
++        accountId: '',
++        balance: 0,
++        margin: 0,
++        available: 0,
++        totalValue: 0,
++        dailyPnL: 0,
++        dailyPnLPercent: 0,
++        positions: [],
++        recentTrades: []
++      };
++    } catch (error) {
++      console.error('Error fetching account information:', error);
++      return {
++        accountId: '',
++        balance: 0,
++        margin: 0,
++        available: 0,
++        totalValue: 0,
++        dailyPnL: 0,
++        dailyPnLPercent: 0,
++        positions: [],
++        recentTrades: []
++      };
++    }
++  }
+
+diff --git a/frontend/src/components/trading/Trading.js b/frontend/src/components/trading/Trading.js
+index aaaaaaa..bbbbbbb 100644
+--- a/frontend/src/components/trading/Trading.js
++++ b/frontend/src/components/trading/Trading.js
+@@ -264,22 +264,34 @@ const Trading = () => {
+       try {
+         console.log(`Updating chart for ${selectedSymbol} with timeframe ${timeframe}`);
+         
+-        // Mock data update for demonstration
+-        const candleData = generateMockCandleData();
+-        
+-        // Make sure we have valid data
+-        if (!candleData || !Array.isArray(candleData) || candleData.length === 0) {
+-          console.warn("Invalid candle data generated");
+-          return;
+-        }
+-        
+-        // Update chart data
+-        candlestickSeries.setData(candleData);
+-        
+-        // Update volume data
+-        const volumeData = candleData.map(candle => ({
+-          time: candle.time,
+-          value: candle.volume || Math.random() * 10000,
+-          color: candle.close >= candle.open ? '#26a69a88' : '#ef535088',
+-        }));
+-        
+-        volumeSeries.setData(volumeData);
++        // Fetch real candle data from API
++        (async () => {
++          try {
++            const hyperliquidDataService = (await import('../../services/hyperliquidDataService')).default;
++            
++            // Fetch real candle data
++            const realCandleData = await hyperliquidDataService.getCandles(
++              selectedSymbol, 
++              timeframe, 
++              200 // Get last 200 candles
++            );
++            
++            if (realCandleData && Array.isArray(realCandleData) && realCandleData.length > 0) {
++              // Format data for the chart
++              const formattedData = realCandleData.map(candle => ({
++                time: candle.time,
++                open: candle.open,
++                high: candle.high,
++                low: candle.low,
++                close: candle.close,
++                volume: candle.volume
++              }));
++              
++              // Update chart data
++              candlestickSeries.setData(formattedData);
++              
++              // Update volume data
++              const volumeData = formattedData.map(candle => ({
++                time: candle.time,
++                value: candle.volume || 0,
++                color: candle.close >= candle.open ? '#26a69a88' : '#ef535088',
++              }));
++              
++              volumeSeries.setData(volumeData);
++            } else {
++              console.warn('No candle data returned from API, chart may be empty');
++            }
++          } catch (error) {
++            console.error('Error fetching real candle data:', error);
++          }
++        })();
++      } catch (error) {
++        console.error("Error in chart update effect:", error);
++      }
++    },
++    [selectedSymbol, timeframe, chartContainerRef]
++  );
++  
++  // Toggle trading symbol
++  const handleSymbolChange = (symbol) => {
++    setSelectedSymbol(symbol);
++  };
+-- 
+2.34.1
