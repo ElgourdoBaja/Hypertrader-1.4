@@ -1239,6 +1239,13 @@ class HyperliquidDataService {
   }
   
   /**
+   * Disable demo mode and switch to live API
+   */
+  disableDemoMode() {
+    return this.enableLiveMode();
+  }
+
+  /**
    * Enable live mode and use real API data
    */
   enableLiveMode() {
