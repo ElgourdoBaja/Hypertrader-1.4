@@ -41,6 +41,7 @@ class HyperliquidDataService {
     // API credentials
     this.apiKey = null;
     this.apiSecret = null;
+    this.publicAddress = null; // User's public address for info requests
     
     // Default error handler
     this.defaultErrorHandler = (error) => {
