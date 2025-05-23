@@ -58,9 +58,6 @@ class HyperliquidDataService {
   async initialize(options = {}) {
     console.log('Initializing Hyperliquid API service...');
     
-    // Stop any existing demo mode simulations
-    this._stopAllSimulations();
-    
     // Store API credentials
     this.apiKey = options.apiKey;
     this.apiSecret = options.apiSecret;
@@ -70,41 +67,25 @@ class HyperliquidDataService {
       this.addStatusListener(options.onStatusChange);
     }
     
-    // Check if we have valid API credentials
-    const hasCredentials = !!(this.apiKey && this.apiSecret);
+    // Always use live mode regardless of credentials
+    console.log('Setting up LIVE MODE connection to Hyperliquid API...');
+    this._setMode(API_MODES.LIVE);
     
+    // Try to connect with available credentials
+    const hasCredentials = !!(this.apiKey && this.apiSecret);
     if (hasCredentials) {
-      console.log('API credentials provided, attempting to connect to LIVE API...');
-      
       try {
-        // Try to connect to the real API
-        const apiConnected = await this._testApiConnection();
-        
-        if (apiConnected) {
-          // Successfully connected to the real API
-          console.log('✅ Successfully connected to Hyperliquid API - LIVE MODE activated');
-          this._setMode(API_MODES.LIVE);
-          return true;
-        } else {
-          // Failed to connect to the real API
-          console.warn('❌ Failed to connect to Hyperliquid API with provided credentials');
-          console.log('Attempting to reconnect in live mode...');
-          // Still use live mode but with limited functionality
-          this._setMode(API_MODES.LIVE);
-          return true;
-        }
+        // Test API connection but don't change mode based on result
+        await this._testApiConnection();
       } catch (error) {
         console.error('Error during API connection test:', error);
-        console.log('Attempting to connect in live mode despite errors...');
-        this._setMode(API_MODES.LIVE);
-        return true;
+        console.log('Continuing in LIVE mode despite errors...');
       }
     } else {
-      // No credentials provided, but still try to use live mode with limited functionality
-      console.log('No API credentials provided, but attempting to use LIVE MODE with limited functionality');
-      this._setMode(API_MODES.LIVE);
-      return true;
+      console.log('No API credentials provided, some functionality may be limited.');
     }
+    
+    return true;
   }
   
   /**
