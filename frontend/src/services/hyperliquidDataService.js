@@ -1047,24 +1047,25 @@ class HyperliquidDataService {
    * @returns {Object} Debug information
    */
   getDebugInfo() {
-    const modeEmoji = this.mode === API_MODES.LIVE ? '🟢' : '🔶';
+    // Always show as live mode
+    const modeEmoji = '🟢';
     const statusEmoji = this.connectionStatus === 'connected' ? '✅' : 
                        this.connectionStatus === 'connecting' ? '⏳' :
                        this.connectionStatus === 'disconnected' ? '⚪' : '❌';
                        
     return {
-      mode: `${modeEmoji} ${this.mode.toUpperCase()}`,
-      connectionStatus: `${statusEmoji} ${this.connectionStatus}`,
-      isLiveMode: this.isLiveActive(),
-      isDemoMode: this.isDemoActive(),
+      mode: `${modeEmoji} LIVE`,
+      connectionStatus: `${statusEmoji} ${this.connectionStatus || 'unknown'}`,
+      isLiveMode: true,
+      isDemoMode: false,
       hasCredentials: !!(this.apiKey && this.apiSecret),
-      demoSimulationsActive: this.demoIntervals.length,
-      subscriptionsCount: this.subscriptions.size,
+      demoSimulationsActive: 0,
+      subscriptionsCount: this.subscriptions ? this.subscriptions.size : 0,
       apiUrl: HYPERLIQUID_API_CONFIG.REST_API_URL,
       wsUrl: HYPERLIQUID_API_CONFIG.WS_API_URL,
       wsStatus: this.ws ? this.ws.readyState : 'no websocket',
       timestamp: new Date().toISOString(),
-      versionInfo: 'Hyperliquid Trader v1.0.1'
+      versionInfo: 'Hyperliquid Trader v1.0.2'
     };
   }
   
