@@ -207,7 +207,7 @@ const Settings = () => {
                     });
                   } else {
                     // Disable demo mode and try to connect to real API
-                    hyperliquidDataService.disableDemoMode();
+                    hyperliquidDataService.enableLiveMode();
                     testApiConnection();
                   }
                 }}
