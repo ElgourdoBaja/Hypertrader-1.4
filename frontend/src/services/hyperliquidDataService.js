@@ -835,26 +835,18 @@ class HyperliquidDataService {
     console.log('Fetching available markets');
     
     try {
-      // Try the info endpoint
-      const response = await fetch(`${HYPERLIQUID_API_CONFIG.REST_API_URL}/info`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          type: 'meta'
-        })
-      });
+      // This is a public info endpoint that doesn't need authentication or public address
+      const endpoint = 'info';
+      const params = {
+        type: 'meta'
+      };
       
-      if (!response.ok) {
-        throw new Error(`API request failed with status ${response.status}: ${response.statusText}`);
-      }
+      // Make API request
+      const response = await this._apiRequest(endpoint, params, 'POST', false);
       
-      const data = await response.json();
-      
-      if (data && data.universe) {
+      if (response && response.universe) {
         // Transform the response into a format the app expects
-        return data.universe.map(market => ({
+        return response.universe.map(market => ({
           symbol: market.name + '-PERP',
           baseAsset: market.name,
           quoteAsset: 'USD',
