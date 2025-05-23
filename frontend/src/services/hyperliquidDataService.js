@@ -1204,6 +1204,44 @@ class HyperliquidDataService {
   _startSimulations() {
     // Demo mode is disabled, this is a no-op
   }
+  /**
+   * Get candlestick data for a market
+   * @param {string} symbol - Market symbol
+   * @param {string} timeframe - Candle timeframe (e.g., '1m', '5m', '1h', '1d')
+   * @param {number} limit - Number of candles to fetch
+   * @returns {Promise<Array>} Candlestick data
+   */
+  async getCandles(symbol, timeframe, limit = 200) {
+    console.log(`Fetching candle data for ${symbol} with timeframe ${timeframe}`);
+    
+    try {
+      // Make API request to get candles
+      const endpoint = `candles/${symbol}`;
+      const params = {
+        interval: timeframe,
+        limit
+      };
+      
+      const response = await this._apiRequest(endpoint, params);
+      
+      if (Array.isArray(response)) {
+        return response.map(candle => ({
+          time: candle.timestamp / 1000, // Convert to seconds for LightweightCharts
+          open: candle.open,
+          high: candle.high,
+          low: candle.low,
+          close: candle.close,
+          volume: candle.volume
+        }));
+      }
+      
+      console.warn('Invalid response format from candles API:', response);
+      return [];
+    } catch (error) {
+      console.error(`Error fetching candles for ${symbol}:`, error);
+      return [];
+    }
+  }
   
 
 }
