@@ -1236,12 +1236,33 @@ class HyperliquidDataService {
     console.log('Fetching account information');
     
     try {
-      // Make API request to get account info
-      const response = await this._apiRequest('account');
+      if (!this.publicAddress) {
+        console.warn('Public address not provided for account info request');
+        return {
+          accountId: '',
+          balance: 0,
+          margin: 0,
+          available: 0,
+          totalValue: 0,
+          dailyPnL: 0,
+          dailyPnLPercent: 0,
+          positions: [],
+          recentTrades: []
+        };
+      }
+      
+      // Make API request to get account info - this needs public address
+      const endpoint = `info/account`;
+      const params = {
+        address: this.publicAddress,
+      };
+      
+      // This is an authenticated request since it's account specific
+      const response = await this._apiRequest(endpoint, params, 'GET', true);
       
       if (response) {
         return {
-          accountId: response.accountId || '',
+          accountId: response.accountId || this.publicAddress,
           balance: response.balance || 0,
           margin: response.margin || 0,
           available: response.available || 0,
