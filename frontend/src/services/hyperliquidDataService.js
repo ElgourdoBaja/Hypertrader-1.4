@@ -523,14 +523,8 @@ class HyperliquidDataService {
    * @private
    */
   async _apiRequest(endpoint, data = {}, method = 'GET') {
-    // If in demo mode, return simulated data
-    if (this.mode === API_MODES.DEMO) {
-      console.log(`🔶 DEMO MODE: Simulating API request to ${endpoint}`);
-      return this._getSimulatedData(endpoint, data);
-    }
-    
-    // Log the real API request
-    console.log(`🟢 LIVE MODE: Making real API request to ${endpoint}`);
+    // Log the API request
+    console.log(`🟢 LIVE MODE: Making API request to ${endpoint}`);
     
     // Make a real API request
     try {
