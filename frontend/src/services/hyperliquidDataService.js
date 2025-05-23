@@ -54,6 +54,7 @@ class HyperliquidDataService {
    * @param {Object} options - Configuration options
    * @param {string} options.apiKey - Hyperliquid API key
    * @param {string} options.apiSecret - Hyperliquid API secret
+   * @param {string} options.publicAddress - User's public address for info requests
    * @param {Function} options.onStatusChange - Callback for status changes
    */
   async initialize(options = {}) {
@@ -62,6 +63,11 @@ class HyperliquidDataService {
     // Store API credentials
     this.apiKey = options.apiKey;
     this.apiSecret = options.apiSecret;
+    this.publicAddress = options.publicAddress;
+    
+    if (!this.publicAddress) {
+      console.warn('Public address not provided - information requests may fail');
+    }
     
     // Register status change listener if provided
     if (options.onStatusChange) {
