@@ -100,7 +100,6 @@ class HyperliquidDataService {
         console.log('Attempting to connect in live mode despite errors...');
         this._setMode(API_MODES.LIVE);
         return true;
-        return false;
       }
     } else {
       // No credentials provided, use demo mode
