@@ -1009,35 +1009,37 @@ class HyperliquidDataService {
   }
   
   /**
-   * Fetch recent trades for a symbol
+   * Get recent trades for a market
    * @param {string} symbol - Market symbol
    * @param {number} limit - Number of trades to fetch
-   * @returns {Promise<Array>} Recent trades
+   * @returns {Promise<Array>} Recent trades data
    */
   async getRecentTrades(symbol, limit = 50) {
+    console.log(`Fetching recent trades for ${symbol}`);
+    
     try {
-      const coin = symbol.split('-')[0]; // Extract coin name from symbol
-      
-      const response = await this._apiRequest('info/trades', {
-        coin,
+      // Make API request to get recent trades
+      const endpoint = `trades/${symbol}`;
+      const params = {
         limit
-      });
+      };
+      
+      const response = await this._apiRequest(endpoint, params);
       
       if (Array.isArray(response)) {
-        // Transform the response into a format the app expects
         return response.map(trade => ({
-          id: trade.id || `trade_${Date.now()}_${Math.random()}`,
-          symbol,
+          id: trade.id || `trade-${Date.now()}-${Math.random()}`,
           price: trade.price,
-          size: trade.size || trade.amount,
-          side: trade.side || (trade.buy ? 'buy' : 'sell'),
-          timestamp: trade.timestamp || trade.time || Date.now()
+          amount: trade.quantity || trade.amount,
+          side: trade.side.toLowerCase(),
+          timestamp: new Date(trade.time || trade.timestamp)
         }));
       }
       
+      console.warn('Invalid response format from trades API:', response);
       return [];
     } catch (error) {
-      this.defaultErrorHandler(error);
+      console.error(`Error fetching recent trades for ${symbol}:`, error);
       return [];
     }
   }
