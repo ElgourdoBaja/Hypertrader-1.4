@@ -4,6 +4,7 @@ import hyperliquidDataService from '../../services/hyperliquidDataService';
 const ApiSetup = ({ onSetupComplete }) => {
   const [apiKey, setApiKey] = useState('');
   const [apiSecret, setApiSecret] = useState('');
+  const [publicAddress, setPublicAddress] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   
@@ -16,18 +17,29 @@ const ApiSetup = ({ onSetupComplete }) => {
       return;
     }
     
+    if (!publicAddress) {
+      setError('Public Address is required for account information requests');
+      return;
+    }
+    
     setIsLoading(true);
     
     try {
       // For Electron app
       if (window.electronAPI) {
-        const result = await window.electronAPI.saveApiCredentials({ apiKey, apiSecret });
+        const result = await window.electronAPI.saveApiCredentials({ 
+          apiKey, 
+          apiSecret,
+          publicAddress 
+        });
+        
         if (result.success) {
           // Initialize Hyperliquid data service with new credentials
           try {
             await hyperliquidDataService.initialize({
               apiKey,
               apiSecret,
+              publicAddress,
               onStatusChange: (status) => {
                 console.log(`Hyperliquid connection status: ${status}`);
               }
@@ -66,7 +78,7 @@ const ApiSetup = ({ onSetupComplete }) => {
         
         <h2 className="text-xl font-semibold mb-6 text-white">API Setup</h2>
         <p className="text-gray-400 mb-6">
-          To get started, please enter your Hyperliquid API credentials. 
+          To get started, please enter your Hyperliquid API credentials and your public address. 
           These will be securely stored on your device.
         </p>
         
@@ -91,7 +103,7 @@ const ApiSetup = ({ onSetupComplete }) => {
             />
           </div>
           
-          <div className="mb-6">
+          <div className="mb-4">
             <label className="block text-sm font-medium text-gray-300 mb-1" htmlFor="apiSecret">
               API Secret
             </label>
@@ -103,6 +115,23 @@ const ApiSetup = ({ onSetupComplete }) => {
               className="input"
               placeholder="Enter your Hyperliquid API secret"
             />
+          </div>
+          
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-300 mb-1" htmlFor="publicAddress">
+              Public Address
+            </label>
+            <input
+              id="publicAddress"
+              type="text"
+              value={publicAddress}
+              onChange={(e) => setPublicAddress(e.target.value)}
+              className="input"
+              placeholder="Enter your Hyperliquid wallet address"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              This is required for information requests and must be your account's public address.
+            </p>
           </div>
           
           <button
