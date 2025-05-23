@@ -1171,11 +1171,11 @@ class HyperliquidDataService {
   }
   
   /**
-   * Check if demo mode is currently active
-   * @returns {boolean} True if demo mode is active
+   * Check if demo mode is active (always returns false)
+   * @returns {boolean} Always false
    */
   isDemoActive() {
-    return this.mode === API_MODES.DEMO;
+    return false;
   }
   
   /**
