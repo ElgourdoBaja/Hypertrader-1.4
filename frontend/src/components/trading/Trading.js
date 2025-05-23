@@ -258,34 +258,52 @@ const Trading = () => {
         
         console.log(`Updating chart for ${selectedSymbol} with timeframe ${timeframe}`);
         
-        // Mock data update for demonstration
-        const candleData = generateMockCandleData();
-        
-        // Make sure we have valid data
-        if (!candleData || !Array.isArray(candleData) || candleData.length === 0) {
-          console.warn("Invalid candle data generated");
-          return;
-        }
-        
-        // Update chart data
-        try {
-          candlestickSeries.setData(candleData);
-          
-          const volumeData = candleData.map(candle => ({
-            time: candle.time,
-            value: candle.volume || Math.random() * 10000,
-            color: candle.close >= candle.open ? '#26a69a88' : '#ef535088',
-          }));
-          
-          volumeSeries.setData(volumeData);
-          
-          // Fit the visible range to show all data
-          chart.timeScale().fitContent();
-          
-          console.log("Chart data updated successfully");
-        } catch (err) {
-          console.error("Error updating chart data:", err);
-        }
+        // Fetch real candle data from API
+        (async () => {
+          try {
+            const hyperliquidDataService = (await import('../../services/hyperliquidDataService')).default;
+            
+            // Fetch real candle data
+            const realCandleData = await hyperliquidDataService.getCandles(
+              selectedSymbol, 
+              timeframe, 
+              200 // Get last 200 candles
+            );
+            
+            if (realCandleData && Array.isArray(realCandleData) && realCandleData.length > 0) {
+              // Format data for the chart
+              const formattedData = realCandleData.map(candle => ({
+                time: candle.time,
+                open: candle.open,
+                high: candle.high,
+                low: candle.low,
+                close: candle.close,
+                volume: candle.volume
+              }));
+              
+              // Update chart data
+              candlestickSeries.setData(formattedData);
+              
+              // Update volume data
+              const volumeData = formattedData.map(candle => ({
+                time: candle.time,
+                value: candle.volume || 0,
+                color: candle.close >= candle.open ? '#26a69a88' : '#ef535088',
+              }));
+              
+              volumeSeries.setData(volumeData);
+              
+              // Fit the visible range to show all data
+              chart.timeScale().fitContent();
+              
+              console.log("Chart data updated successfully");
+            } else {
+              console.warn('No candle data returned from API, chart may be empty');
+            }
+          } catch (error) {
+            console.error('Error fetching real candle data:', error);
+          }
+        })();
       } catch (error) {
         console.error("Error in chart update effect:", error);
       }
