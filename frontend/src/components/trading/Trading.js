@@ -8,6 +8,8 @@ const Trading = () => {
   const [selectedSymbol, setSelectedSymbol] = useState('BTC-PERP');
   const [timeframe, setTimeframe] = useState('5m');
   const [tradingSymbols, setTradingSymbols] = useState([]);
+  const [asks, setAsks] = useState([]);
+  const [bids, setBids] = useState([]);
   const [strategyParams, setStrategyParams] = useState({
     lookbackPeriod: 20,
     momentumThreshold: 0.5,
