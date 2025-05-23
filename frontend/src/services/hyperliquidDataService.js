@@ -989,13 +989,15 @@ class HyperliquidDataService {
     console.log(`Fetching recent trades for ${symbol}`);
     
     try {
-      // Make API request to get recent trades
-      const endpoint = `trades/${symbol}`;
+      // Make API request to get recent trades - this is an info request that needs public address
+      const endpoint = `info/trades`;
       const params = {
-        limit
+        symbol,
+        limit,
+        // The public address will be added by _apiRequest for info requests
       };
       
-      const response = await this._apiRequest(endpoint, params);
+      const response = await this._apiRequest(endpoint, params, 'GET', false);
       
       if (Array.isArray(response)) {
         return response.map(trade => ({
