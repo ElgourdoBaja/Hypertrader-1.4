@@ -355,42 +355,7 @@ const Trading = () => {
     return () => clearInterval(refreshInterval);
   }, [selectedSymbol]);
   
-  // Generate mock candle data
-  const generateMockCandleData = () => {
-    const data = [];
-    const basePrice = selectedSymbol === 'BTC-PERP' ? 58000 : 
-                      selectedSymbol === 'ETH-PERP' ? 3200 : 
-                      selectedSymbol === 'SOL-PERP' ? 145 : 100;
-    
-    const volatility = selectedSymbol === 'BTC-PERP' ? 0.01 : 
-                       selectedSymbol === 'ETH-PERP' ? 0.015 : 0.02;
-    
-    const now = Math.floor(Date.now() / 1000);
-    const secondsInCandle = timeframe === '1m' ? 60 :
-                           timeframe === '3m' ? 180 :
-                           timeframe === '5m' ? 300 :
-                           timeframe === '15m' ? 900 :
-                           timeframe === '30m' ? 1800 :
-                           timeframe === '1h' ? 3600 :
-                           timeframe === '4h' ? 14400 : 86400;
-    
-    for (let i = 0; i < 200; i++) {
-      const time = now - (200 - i) * secondsInCandle;
-      const randomChange = (Math.random() * 2 - 1) * volatility;
-      const open = i === 0 ? basePrice : data[i - 1].close;
-      const close = open * (1 + randomChange);
-      const high = Math.max(open, close) * (1 + Math.random() * volatility / 2);
-      const low = Math.min(open, close) * (1 - Math.random() * volatility / 2);
-      
-      data.push({
-        time,
-        open,
-        high,
-        low,
-        close,
-        volume: Math.random() * 10000
-      });
-    }
+
     
     return data;
   };
