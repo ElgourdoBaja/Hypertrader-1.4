@@ -21,100 +21,54 @@ const PositionManagement = () => {
         // Import hyperliquidDataService dynamically to avoid circular dependencies
         const hyperliquidDataService = (await import('../../services/hyperliquidDataService')).default;
         
-        // Check if we're in live mode
-        if (hyperliquidDataService.isLiveConnection()) {
-          console.log('Fetching real positions from API...');
-          try {
-            // In a real implementation, we would fetch real positions from the API
-            // For now, just log that we're in live mode but still using mock data
-            console.log('Live connection detected, but real position data not yet implemented');
+        // Always fetch real positions from API
+        console.log('Fetching real positions from API...');
+        
+        try {
+          const accountInfo = await hyperliquidDataService.getAccountInfo();
+          
+          if (accountInfo && accountInfo.positions) {
+            // Use real position data from API
+            setPositions(accountInfo.positions);
             
-            // In the future, implement real API call for positions here
-          } catch (error) {
-            console.error('Error fetching real positions:', error);
+            // Calculate portfolio value and PnL from real data
+            const portfolioVal = accountInfo.positions.reduce((sum, pos) => sum + pos.margin, 0);
+            setPortfolioValue(portfolioVal);
+            
+            const pnl = accountInfo.positions.reduce((sum, pos) => sum + pos.pnl, 0);
+            setTotalPnL(pnl);
+            
+            setAvailableMargin(accountInfo.availableMargin || 0);
+          } else {
+            console.warn('No position data returned from API');
+            // Use empty arrays if no positions
+            setPositions([]);
+            setPortfolioValue(0);
+            setTotalPnL(0);
+            setAvailableMargin(0);
           }
+        } catch (error) {
+          console.error('Error fetching real positions:', error);
+          // On error, don't use mock data, just show empty state
+          setPositions([]);
+          setPortfolioValue(0);
+          setTotalPnL(0);
+          setAvailableMargin(0);
         }
         
-        // If we don't have real data (or we're in demo mode), use mock data
-        setTimeout(() => {
-          const mockPositions = [
-            {
-              id: 'pos-1',
-              symbol: 'BTC-PERP',
-              side: 'long',
-              size: 0.5,
-              entryPrice: 57800,
-              currentPrice: 59200,
-              liquidationPrice: 42300,
-              pnl: 700,
-              pnlPercent: 2.42,
-              margin: 15000,
-              leverage: 2,
-              openTime: new Date(Date.now() - 2 * 60 * 60 * 1000),
-              stopLoss: 56500,
-              takeProfit: 62000
-            },
-            {
-              id: 'pos-2',
-              symbol: 'ETH-PERP',
-              side: 'long',
-              size: 5,
-              entryPrice: 3200,
-              currentPrice: 3280,
-              liquidationPrice: 2350,
-              pnl: 400,
-              pnlPercent: 2.5,
-              margin: 8000,
-              leverage: 2.5,
-              openTime: new Date(Date.now() - 5 * 60 * 60 * 1000),
-              stopLoss: 3100,
-              takeProfit: 3400
-            },
-            {
-              id: 'pos-3',
-              symbol: 'SOL-PERP',
-              side: 'short',
-              size: 20,
-              entryPrice: 148,
-              currentPrice: 142,
-              liquidationPrice: 185,
-              pnl: 120,
-              pnlPercent: 4.05,
-              margin: 3000,
-              leverage: 4,
-              openTime: new Date(Date.now() - 8 * 60 * 60 * 1000),
-              stopLoss: 155,
-              takeProfit: 135
-            }
-          ];
-          
-          setPositions(mockPositions);
-          
-          // Calculate portfolio value, margin, and total PnL
-          const portfolioVal = mockPositions.reduce((sum, pos) => sum + pos.margin, 0);
-          const margin = 25000; // In a real app, this would be fetched from the API
-          const pnl = mockPositions.reduce((sum, pos) => sum + pos.pnl, 0);
-          
-          setPortfolioValue(portfolioVal);
-          setAvailableMargin(margin);
-          setTotalPnL(pnl);
-          
-          setIsLoading(false);
-        }, 500);
+        setIsLoading(false);
       } catch (error) {
-        console.error('Error in loadPositions:', error);
+        console.error('Error loading positions:', error);
         setIsLoading(false);
       }
     };
     
     loadPositions();
     
-    // Refresh positions every 30 seconds
-    const refreshInterval = setInterval(loadPositions, 30000);
+    // Set up refresh interval
+    const refreshInterval = setInterval(loadPositions, 10000); // Refresh every 10 seconds
     
-    return () => {
-      clearInterval(refreshInterval);
-    };
+    return () => clearInterval(refreshInterval);
   }, []);
   
   // Select position for closing
