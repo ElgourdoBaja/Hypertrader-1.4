@@ -801,10 +801,7 @@ class HyperliquidDataService {
     };
   }
   async getMarkets() {
-    // If we're explicitly in demo mode, use simulated data
-    if (this.isDemoActive()) {
-      return this._getSimulatedMarkets().markets;
-    }
+    console.log('Fetching available markets');
     
     try {
       // First try the info endpoint
