@@ -1,0 +1,46 @@
+From: Assistant <assistant@example.com>
+Date: Mon, 20 May 2024 20:00:00 +0000
+Subject: [PATCH] Fix demo mode to live mode switching
+
+This patch fixes the issues with the app not properly switching from demo mode to live mode.
+There were two main issues:
+1. Missing disableDemoMode method in the hyperliquidDataService
+2. The enableLiveMode method wasn't stopping simulations or reloading data properly
+
+---
+ src/services/hyperliquidDataService.js | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+), 0 deletions(-)
+
+diff --git a/frontend/src/services/hyperliquidDataService.js b/frontend/src/services/hyperliquidDataService.js
+index aaaaaaa..bbbbbbb 100644
+--- a/frontend/src/services/hyperliquidDataService.js
++++ b/frontend/src/services/hyperliquidDataService.js
+@@ -1238,6 +1238,13 @@ class HyperliquidDataService {
+     this._setMode(API_MODES.DEMO);
+   }
+   
++  /**
++   * Disable demo mode and switch to live API
++   */
++  disableDemoMode() {
++    return this.enableLiveMode();
++  }
++
+   /**
+    * Enable live mode with real API connection
+    */
+@@ -1251,7 +1258,13 @@ class HyperliquidDataService {
+       return;
+     }
+     
++    // Stop all demo simulations
++    this._stopAllSimulations();
++    
+     // Set mode to LIVE - this will trigger connection to real API
+     this._setMode(API_MODES.LIVE);
++    
++    // Force reload market and account data
++    this._loadData();
+   }
+-- 
+2.34.1
