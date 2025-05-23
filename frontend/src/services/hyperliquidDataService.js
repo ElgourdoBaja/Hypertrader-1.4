@@ -1189,45 +1189,20 @@ class HyperliquidDataService {
   }
   
   /**
-   * Stop all demo data simulations
+   * Stop all demo data simulations (stub - demo mode disabled)
    * @private
    */
   _stopAllSimulations() {
-    if (this.demoIntervals && this.demoIntervals.length > 0) {
-      console.log(`Stopping ${this.demoIntervals.length} demo simulations...`);
-      
-      // Clear all interval timers
-      this.demoIntervals.forEach(interval => {
-        if (interval) {
-          clearInterval(interval);
-        }
-      });
-      
-      // Reset the intervals array
-      this.demoIntervals = [];
-      
-      console.log('All demo simulations stopped');
-    }
+    // Demo mode is disabled, this is a no-op
   }
   
   /**
-   * Start demo data simulations
+   * Start demo data simulations (stub - demo mode disabled)
    * @private
    */
   _startSimulations() {
-    // Don't start simulations if not in demo mode
-    if (!this.isDemoActive()) {
-      console.warn('Not starting simulations because not in DEMO MODE');
-      return;
-    }
-    
-    console.log('Starting demo data simulations...');
-    
-    // Make sure no existing simulations are running
-    this._stopAllSimulations();
-    
-    // Create simulation intervals for different data types
-    this._createTickerSimulation();
+    // Demo mode is disabled, this is a no-op
+  }
     this._createOrderBookSimulation();
     this._createTradesSimulation();
     
