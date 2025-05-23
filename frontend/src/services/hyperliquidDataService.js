@@ -1154,8 +1154,7 @@ class HyperliquidDataService {
   }
   
   /**
-   * Set the API mode (LIVE or DEMO)
-   * @param {string} mode - The mode to set (API_MODES.LIVE or API_MODES.DEMO)
+   * Set API mode (always LIVE)
    * @private
    */
   _setMode(mode) {
