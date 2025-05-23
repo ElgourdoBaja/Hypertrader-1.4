@@ -1,0 +1,26 @@
+From: Assistant <assistant@example.com>
+Date: Mon, 20 May 2024 19:00:00 +0000
+Subject: [PATCH] Fix demo mode toggle functionality
+
+This patch fixes the issue with the app always showing demo data even when live mode is selected.
+The bug was in the Settings.js file where it tried to call a non-existent method `disableDemoMode()`.
+The correct method to use is `enableLiveMode()`.
+
+---
+ src/components/settings/Settings.js | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/frontend/src/components/settings/Settings.js b/frontend/src/components/settings/Settings.js
+index 1234567..abcdefg 100644
+--- a/frontend/src/components/settings/Settings.js
++++ b/frontend/src/components/settings/Settings.js
+@@ -209,7 +209,7 @@ const Settings = () => {
+                   } else {
+                     // Disable demo mode and try to connect to real API
+-                    hyperliquidDataService.disableDemoMode();
++                    hyperliquidDataService.enableLiveMode();
+                     testApiConnection();
+                   }
+                 }}
+-- 
+2.34.1
