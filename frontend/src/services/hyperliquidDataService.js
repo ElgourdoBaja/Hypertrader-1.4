@@ -971,33 +971,40 @@ class HyperliquidDataService {
   }
   
   /**
-   * Fetch order book for a symbol
+   * Get order book data for a market
    * @param {string} symbol - Market symbol
    * @param {number} depth - Order book depth
    * @returns {Promise<Object>} Order book data
    */
   async getOrderBook(symbol, depth = 10) {
+    console.log(`Fetching order book data for ${symbol}`);
+    
     try {
-      const coin = symbol.split('-')[0]; // Extract coin name from symbol
+      // Make API request to get order book
+      const endpoint = `orderbook/${symbol}`;
+      const params = {
+        depth
+      };
       
-      const response = await this._apiRequest('info/orderbook', {
-        coin,
-        limit: depth
-      });
+      const response = await this._apiRequest(endpoint, params);
       
-      if (response) {
-        return {
-          symbol,
-          bids: response.bids || [],
-          asks: response.asks || [],
-          timestamp: response.timestamp || Date.now()
-        };
+      if (response && response.bids && response.asks) {
+        return response;
       }
       
-      return null;
+      console.warn('Invalid response format from order book API:', response);
+      return {
+        bids: [],
+        asks: [],
+        timestamp: Date.now()
+      };
     } catch (error) {
-      this.defaultErrorHandler(error);
-      return null;
+      console.error(`Error fetching order book for ${symbol}:`, error);
+      return {
+        bids: [],
+        asks: [],
+        timestamp: Date.now()
+      };
     }
   }
   
