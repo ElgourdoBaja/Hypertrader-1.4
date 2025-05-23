@@ -613,35 +613,7 @@ class HyperliquidDataService {
    * @private
    */
   async _getSimulatedData(endpoint, data = {}) {
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 300 + Math.random() * 200));
-    
-    console.log(`Generating simulated data for endpoint: ${endpoint}`);
-    
-    const symbol = data.symbol || (data.coin ? `${data.coin}-PERP` : 'BTC-PERP');
-    
-    // Handle different endpoint types
-    if (endpoint.includes('candles') || endpoint.includes('klines')) {
-      return this._getSimulatedCandles(symbol, data.interval || '1h', data.limit || 200);
-    } 
-    else if (endpoint.includes('ticker')) {
-      return this._getSimulatedTicker(symbol);
-    } 
-    else if (endpoint.includes('orderbook') || endpoint.includes('depth')) {
-      return this._getSimulatedOrderBook(symbol, data.limit || 10);
-    } 
-    else if (endpoint.includes('trades')) {
-      return this._getSimulatedTrades(symbol, data.limit || 50);
-    }
-    else if (endpoint.includes('markets')) {
-      return this._getSimulatedMarkets();
-    }
-    
-    // Unhandled endpoint type
-    console.warn(`WARNING: Unhandled API endpoint in demo mode: ${endpoint}`);
-    console.warn(`This could indicate a disconnect between real and demo mode.`);
-    
-    // Default empty response
+    console.warn(`Simulated data is disabled. Always using LIVE mode.`);
     return {};
   }
   
