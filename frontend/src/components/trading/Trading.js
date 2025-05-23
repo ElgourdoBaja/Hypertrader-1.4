@@ -136,28 +136,47 @@ const Trading = () => {
           wickDownColor: '#ef5350',
         });
         
-        // Mock data for demonstration
-        const candleData = generateMockCandleData();
-        candlestickSeries.setData(candleData);
-        
-        // Add volume series
-        const volumeSeries = chart.addHistogramSeries({
-          color: '#26a69a',
-          priceFormat: {
-            type: 'volume',
-          },
-          priceScaleId: '',
-          scaleMargins: {
-            top: 0.8,
-            bottom: 0,
-          },
-        });
-        
-        const volumeData = candleData.map(candle => ({
-          time: candle.time,
-          value: candle.volume || Math.random() * 10000,
-          color: candle.close >= candle.open ? '#26a69a88' : '#ef535088',
-        }));
+        // Fetch real candle data from API
+        (async () => {
+          try {
+            const hyperliquidDataService = (await import('../../services/hyperliquidDataService')).default;
+            
+            // Fetch real candle data
+            const realCandleData = await hyperliquidDataService.getCandles(
+              selectedSymbol, 
+              selectedTimeframe, 
+              200 // Get last 200 candles
+            );
+            
+            if (realCandleData && realCandleData.length > 0) {
+              // Format data for the chart
+              const formattedData = realCandleData.map(candle => ({
+                time: candle.time,
+                open: candle.open,
+                high: candle.high,
+                low: candle.low,
+                close: candle.close,
+                volume: candle.volume
+              }));
+              
+              // Set the real data
+              candlestickSeries.setData(formattedData);
+              
+              // Set volume data
+              const volumeData = formattedData.map(candle => ({
+                time: candle.time,
+                value: candle.volume || 0,
+                color: candle.close >= candle.open ? '#26a69a88' : '#ef535088',
+              }));
+              
+              volumeSeries.setData(volumeData);
+            } else {
+              console.warn('No candle data returned from API, chart may be empty');
+            }
+          } catch (error) {
+            console.error('Error fetching real candle data:', error);
+          }
+        })();
         
         volumeSeries.setData(volumeData);
         
