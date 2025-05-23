@@ -1194,14 +1194,16 @@ class HyperliquidDataService {
     console.log(`Fetching candle data for ${symbol} with timeframe ${timeframe}`);
     
     try {
-      // Make API request to get candles
-      const endpoint = `candles/${symbol}`;
+      // Make API request to get candles - this is an info request that needs public address
+      const endpoint = `info/candles`;
       const params = {
+        symbol, // The trading pair
         interval: timeframe,
-        limit
+        limit,
+        // The public address will be added by _apiRequest for info requests
       };
       
-      const response = await this._apiRequest(endpoint, params);
+      const response = await this._apiRequest(endpoint, params, 'GET', false);
       
       if (Array.isArray(response)) {
         return response.map(candle => ({
