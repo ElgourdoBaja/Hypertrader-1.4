@@ -858,7 +858,7 @@ class HyperliquidDataService {
         }));
       }
       
-      console.warn('Invalid response format from markets API:', data);
+      console.warn('Invalid response format from markets API:', response);
       return [];
     } catch (error) {
       console.error('Error fetching markets:', error);
