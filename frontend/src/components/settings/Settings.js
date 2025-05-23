@@ -161,49 +161,16 @@ const Settings = () => {
               </button>
               
               <button 
-                className={`btn ${connectionStatus.testing ? 'btn-disabled' : connectionStatus.isLive ? 'btn-success' : 'btn-secondary'}`}
-                onClick={testApiConnection}
-                disabled={connectionStatus.testing}
-              >
-                {connectionStatus.testing ? 'Testing...' : 'Test Connection'}
-              </button>
-              
-              <button 
                 className="btn btn-info ml-2"
                 onClick={() => {
                   const debugInfo = hyperliquidDataService.getDebugInfo();
                   console.log('API Debug Info:', debugInfo);
                   alert('Debug info logged to console.\n\n' + 
                         'Connection Status: ' + debugInfo.connectionStatus + '\n' +
-                        'Demo Mode: ' + debugInfo.demoMode + '\n' +
                         'Live Mode: ' + debugInfo.isLiveMode);
                 }}
               >
                 Debug Info
-              </button>
-              
-              <button 
-                className={`btn ${connectionStatus.isLive ? 'btn-warning' : 'btn-success'}`}
-                onClick={() => {
-                  if (connectionStatus.isLive) {
-                    // Enable demo mode
-                    hyperliquidDataService.enableDemoMode();
-                    setConnectionStatus({
-                      ...connectionStatus,
-                      isLive: false,
-                      result: {
-                        success: true,
-                        message: 'Switched to demo mode with simulated data.'
-                      }
-                    });
-                  } else {
-                    // Disable demo mode and try to connect to real API
-                    hyperliquidDataService.enableLiveMode();
-                    testApiConnection();
-                  }
-                }}
-              >
-                {connectionStatus.isLive ? 'Switch to Demo Mode' : 'Switch to Live Mode'}
               </button>
             </div>
             
