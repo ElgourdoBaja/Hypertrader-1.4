@@ -144,7 +144,7 @@ const Trading = () => {
             // Fetch real candle data
             const realCandleData = await hyperliquidDataService.getCandles(
               selectedSymbol, 
-              selectedTimeframe, 
+              timeframe, 
               200 // Get last 200 candles
             );
             
