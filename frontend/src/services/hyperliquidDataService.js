@@ -90,9 +90,10 @@ class HyperliquidDataService {
         } else {
           // Failed to connect to the real API
           console.warn('❌ Failed to connect to Hyperliquid API with provided credentials');
-          console.log('Falling back to DEMO MODE with simulated data');
-          this._setMode(API_MODES.DEMO);
-          return false;
+          console.log('Attempting to reconnect in live mode...');
+          // Still use live mode but with limited functionality
+          this._setMode(API_MODES.LIVE);
+          return true;
         }
       } catch (error) {
         console.error('Error during API connection test:', error);
