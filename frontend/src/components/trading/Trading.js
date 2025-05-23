@@ -136,6 +136,19 @@ const Trading = () => {
           wickDownColor: '#ef5350',
         });
         
+        // Add volume series
+        const volumeSeries = chart.addHistogramSeries({
+          color: '#26a69a',
+          priceFormat: {
+            type: 'volume',
+          },
+          priceScaleId: '',
+          scaleMargins: {
+            top: 0.8,
+            bottom: 0,
+          },
+        });
+        
         // Fetch real candle data from API
         (async () => {
           try {
