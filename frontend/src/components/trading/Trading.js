@@ -321,10 +321,23 @@ const Trading = () => {
         // Fetch real order book data
         const orderBookData = await hyperliquidDataService.getOrderBook(selectedSymbol);
         
-        if (orderBookData) {
+        if (orderBookData && orderBookData.bids && orderBookData.asks) {
           // Format and use real order book data
-          setBids(orderBookData.bids || []);
-          setAsks(orderBookData.asks || []);
+          setBids(orderBookData.bids.map(bid => ({
+            price: bid[0],
+            amount: bid[1],
+            total: bid[0] * bid[1]
+          })));
+          
+          setAsks(orderBookData.asks.map(ask => ({
+            price: ask[0],
+            amount: ask[1],
+            total: ask[0] * ask[1]
+          })));
+        } else {
+          // If error or no data, use empty arrays
+          setBids([]);
+          setAsks([]);
         }
       } catch (error) {
         console.error('Error loading order book:', error);
