@@ -1203,7 +1203,6 @@ class HyperliquidDataService {
   _startSimulations() {
     // Demo mode is disabled, this is a no-op
   }
-  }
   
   /**
    * Create ticker data simulation
