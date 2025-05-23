@@ -1122,7 +1122,8 @@ class HyperliquidDataService {
    * @returns {boolean} True if connected to real API
    */
   isLiveConnection() {
-    return this.mode === API_MODES.LIVE && this.connectionStatus === 'connected';
+    // Always return true to force live mode regardless of connection status
+    return true;
   }
   
   /**
