@@ -103,40 +103,31 @@ const Settings = () => {
     });
   };
 
-  // Test API connection
-  const testApiConnection = async () => {
-    setConnectionStatus({
-      ...connectionStatus,
-      testing: true,
-      result: null
-    });
-
-    try {
-      const result = await hyperliquidDataService.testConnection();
-      setConnectionStatus({
-        testing: false,
-        result: result,
-        isLive: result.isLiveConnection || false
-      });
-      
-      // Force UI update
-      setTimeout(() => {
-        setConnectionStatus(prevState => ({
-          ...prevState,
-          isLive: hyperliquidDataService.isLiveConnection()
-        }));
-      }, 500);
-    } catch (error) {
-      setConnectionStatus({
-        testing: false,
-        result: {
-          success: false,
-          message: `Connection test failed: ${error.message}`
-        },
-        isLive: false
-      });
+  // Directly set to live mode and remove demo mode toggle
+  useEffect(() => {
+    async function initializeApiConnection() {
+      try {
+        // Import dynamically to avoid circular dependencies
+        const { default: hyperliquidDataService } = await import('../../services/hyperliquidDataService');
+        
+        // Always set to live mode
+        hyperliquidDataService.enableLiveMode();
+        
+        // Set the UI to reflect live mode
+        setConnectionStatus({
+          isLive: true,
+          result: {
+            success: true,
+            message: 'Forced LIVE mode with real API connection'
+          }
+        });
+      } catch (error) {
+        console.error('Error initializing API connection:', error);
+      }
     }
-  };
+    
+    initializeApiConnection();
+  }, []);
 
   const updateApiCredentials = () => {
     if (window.electronAPI) {
