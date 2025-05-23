@@ -522,16 +522,36 @@ class HyperliquidDataService {
   }
   
   /**
-   * Make an authenticated API request
+   * Make an API request to Hyperliquid
    * @param {string} endpoint - API endpoint
    * @param {Object} data - Request data
    * @param {string} method - HTTP method (GET, POST, etc.)
+   * @param {boolean} requiresAuth - Whether this endpoint requires authentication
    * @returns {Promise<Object>} Response data
    * @private
    */
-  async _apiRequest(endpoint, data = {}, method = 'GET') {
+  async _apiRequest(endpoint, data = {}, method = 'GET', requiresAuth = false) {
+    // Determine if this is an info request (doesn't require auth) or an action (requires auth)
+    const isInfoRequest = endpoint.startsWith('info/') || 
+                         endpoint === 'markets' || 
+                         endpoint.includes('candles') || 
+                         endpoint.includes('ticker') || 
+                         endpoint.includes('orderbook') ||
+                         endpoint.includes('depth') ||
+                         endpoint.includes('trades');
+    
+    // If it's an info request, make sure we have the public address
+    if (isInfoRequest && !requiresAuth) {
+      if (!this.publicAddress) {
+        console.warn('Public address not provided for info request to:', endpoint);
+      } else if (!data.address) {
+        // Add public address to the request data
+        data.address = this.publicAddress;
+      }
+    }
+    
     // Log the API request
-    console.log(`🟢 LIVE MODE: Making API request to ${endpoint}`);
+    console.log(`🟢 LIVE MODE: Making ${isInfoRequest ? 'info' : 'authenticated'} API request to ${endpoint}`);
     
     // Make a real API request
     try {
@@ -541,8 +561,8 @@ class HyperliquidDataService {
         ...HYPERLIQUID_API_CONFIG.DEFAULT_HEADERS,
       };
       
-      // Add API key if available
-      if (this.apiKey) {
+      // Add API key only for authenticated requests
+      if ((requiresAuth || !isInfoRequest) && this.apiKey) {
         headers['X-API-Key'] = this.apiKey;
       }
       
@@ -554,7 +574,7 @@ class HyperliquidDataService {
       };
       
       // Add signature for authenticated requests if we have an API secret
-      if (this.apiSecret) {
+      if ((requiresAuth || !isInfoRequest) && this.apiSecret) {
         const signature = this._signRequest(requestData);
         headers['X-API-Signature'] = signature;
       }
