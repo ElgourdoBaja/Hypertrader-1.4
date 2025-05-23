@@ -355,11 +355,6 @@ const Trading = () => {
     return () => clearInterval(refreshInterval);
   }, [selectedSymbol]);
   
-
-    
-    return data;
-  };
-  
   // Toggle trading symbol
   const toggleTradingSymbol = (symbol) => {
     if (tradingSymbols.includes(symbol)) {
