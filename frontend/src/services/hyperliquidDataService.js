@@ -35,9 +35,8 @@ class HyperliquidDataService {
     this.maxReconnectAttempts = 5;
     this.reconnectInterval = 2000; // Start with 2s, will increase exponentially
     
-    // Demo mode management
-    this.mode = API_MODES.LIVE; // Always start in live mode
-    this.demoIntervals = [];
+    // Always use live mode
+    this.mode = API_MODES.LIVE;
     
     // API credentials
     this.apiKey = null;
