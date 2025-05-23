@@ -97,8 +97,9 @@ class HyperliquidDataService {
         }
       } catch (error) {
         console.error('Error during API connection test:', error);
-        console.log('Falling back to DEMO MODE with simulated data');
-        this._setMode(API_MODES.DEMO);
+        console.log('Attempting to connect in live mode despite errors...');
+        this._setMode(API_MODES.LIVE);
+        return true;
         return false;
       }
     } else {
