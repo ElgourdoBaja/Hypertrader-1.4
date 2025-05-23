@@ -1252,6 +1252,58 @@ class HyperliquidDataService {
     }
   }
   
+  /**
+   * Get account information
+   * @returns {Promise<Object>} Account information
+   */
+  async getAccountInfo() {
+    console.log('Fetching account information');
+    
+    try {
+      // Make API request to get account info
+      const response = await this._apiRequest('account');
+      
+      if (response) {
+        return {
+          accountId: response.accountId || '',
+          balance: response.balance || 0,
+          margin: response.margin || 0,
+          available: response.available || 0,
+          totalValue: response.totalValue || 0,
+          dailyPnL: response.dailyPnL || 0,
+          dailyPnLPercent: response.dailyPnLPercent || 0,
+          positions: Array.isArray(response.positions) ? response.positions : [],
+          recentTrades: Array.isArray(response.recentTrades) ? response.recentTrades : []
+        };
+      }
+      
+      console.warn('Invalid response format from account API:', response);
+      return {
+        accountId: '',
+        balance: 0,
+        margin: 0,
+        available: 0,
+        totalValue: 0,
+        dailyPnL: 0,
+        dailyPnLPercent: 0,
+        positions: [],
+        recentTrades: []
+      };
+    } catch (error) {
+      console.error('Error fetching account information:', error);
+      return {
+        accountId: '',
+        balance: 0,
+        margin: 0,
+        available: 0,
+        totalValue: 0,
+        dailyPnL: 0,
+        dailyPnLPercent: 0,
+        positions: [],
+        recentTrades: []
+      };
+    }
+  }
 
 }
 
