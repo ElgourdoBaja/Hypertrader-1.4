@@ -1,0 +1,377 @@
+From: Assistant <assistant@example.com>
+Date: Mon, 20 May 2024 22:00:00 +0000
+Subject: [PATCH] Remove demo mode completely
+
+This patch completely removes the demo mode functionality and forces the app
+to always use live mode with the real API, regardless of connection status or
+credential validation.
+
+---
+ src/services/hyperliquidDataService.js | 360 +-------------------------
+ 1 file changed, 10 insertions(+), 350 deletions(-)
+
+diff --git a/frontend/src/services/hyperliquidDataService.js b/frontend/src/services/hyperliquidDataService.js
+index aaaaaaa..bbbbbbb 100644
+--- a/frontend/src/services/hyperliquidDataService.js
++++ b/frontend/src/services/hyperliquidDataService.js
+@@ -15,8 +15,7 @@ import HYPERLIQUID_API_CONFIG from '../config/hyperliquidApiConfig';
+ 
+ // API connection modes
+ const API_MODES = {
+-  LIVE: 'live',
+-  DEMO: 'demo'
++  LIVE: 'live'
+ };
+ 
+ /**
+@@ -39,9 +38,8 @@ class HyperliquidDataService {
+     this.reconnectAttempts = 0;
+     this.maxReconnectAttempts = 5;
+     this.reconnectInterval = 2000; // Start with 2s, will increase exponentially
+-    
+-    // Demo mode management
+-    this.mode = API_MODES.DEMO; // Start in demo mode until initialized
++
++    // Always use live mode
+     this.demoIntervals = [];
+     
+     // API credentials
+@@ -59,85 +57,26 @@ class HyperliquidDataService {
+    * @param {function} [options.onStatusChange] - Optional callback for status changes
+    */
+   async initialize(options = {}) {
+-    console.log('Initializing Hyperliquid API service...');
+-    
+-    // Stop any existing demo mode simulations
+-    this._stopAllSimulations();
+-    
++    console.log('Initializing Hyperliquid API service in LIVE mode...');
++
+     // Store API credentials
+     this.apiKey = options.apiKey;
+     this.apiSecret = options.apiSecret;
+     
+     // Register status change listener if provided
+     if (options.onStatusChange) {
+-      this.addStatusListener(options.onStatusChange);
++      this.addStatusListener(options.onStatusChange); 
+     }
+     
+-    // Check if we have valid API credentials
+-    const hasCredentials = !!(this.apiKey && this.apiSecret);
+-    
+-    if (hasCredentials) {
+-      console.log('API credentials provided, attempting to connect to LIVE API...');
+-      
+-      try {
+-        // Try to connect to the real API
+-        const apiConnected = await this._testApiConnection();
+-        
+-        if (apiConnected) {
+-          // Successfully connected to the real API
+-          console.log('✅ Successfully connected to Hyperliquid API - LIVE MODE activated');
+-          this._setMode(API_MODES.LIVE);
+-          return true;
+-        } else {
+-          // Failed to connect to the real API
+-          console.warn('❌ Failed to connect to Hyperliquid API with provided credentials');
+-          console.log('Falling back to DEMO MODE with simulated data');
+-          this._setMode(API_MODES.DEMO);
+-          return false;
+-        }
+-      } catch (error) {
+-        console.error('Error during API connection test:', error);
+-        console.log('Falling back to DEMO MODE with simulated data');
+-        this._setMode(API_MODES.DEMO);
+-        return false;
+-      }
+-    } else {
+-      // No credentials provided, use demo mode
+-      console.log('No API credentials provided, using DEMO MODE with simulated data');
+-      this._setMode(API_MODES.DEMO);
+-      return false;
+-    }
++    // Always use live mode regardless of credentials
++    console.log('Setting up LIVE MODE connection to Hyperliquid API...');
++    this._setMode(API_MODES.LIVE);
++    
++    return true;
+   }
+ 
+-  /**
+-   * Test connection to the Hyperliquid API
+-   * @returns {Promise<boolean>} True if connection succeeded
+-   * @private
+-   */
+-  async _testApiConnection() {
+-    // Don't do anything if no credentials
+-    if (!this.apiKey || !this.apiSecret) {
+-      console.warn('Cannot test API connection without credentials');
+-      return false;
+-    }
+-    
+-    try {
+-      // Make a test request to get account info
+-      const accountInfo = await this._apiRequest('account');
+-      
+-      // Check if response contains expected account data
+-      if (accountInfo && accountInfo.balances) {
+-        return true;
+-      }
+-      
+-      return false;
+-    } catch (error) {
+-      console.error('API connection test failed:', error);
+-      return false;
+-    }
+-  }
+ 
+   /**
+    * Make an API request to the Hyperliquid API
+@@ -526,29 +465,13 @@ class HyperliquidDataService {
+    * @private
+    */
+   async _apiRequest(endpoint, data = {}, method = 'GET') {
+-    // If in demo mode, return simulated data
+-    if (this.mode === API_MODES.DEMO) {
+-      console.log(`🔶 DEMO MODE: Simulating API request to ${endpoint}`);
+-      return this._getSimulatedData(endpoint, data);
+-    }
+-    
+-    // Log the real API request
+-    console.log(`🟢 LIVE MODE: Making real API request to ${endpoint}`);
++    // Log the API request
++    console.log(`🟢 LIVE MODE: Making API request to ${endpoint}`);
+     
+-    // Make a real API request
++    // Make a API request
+     try {
+       const url = `${HYPERLIQUID_API_CONFIG.REST_API_URL}/${endpoint}`;
+ 
+       // ... Rest of the method implementation ...
+ 
+-  /**
+-   * Get simulated data for a specific endpoint
+-   * @param {string} endpoint - API endpoint
+-   * @param {Object} data - Request parameters
+-   * @returns {Promise<Object>} Simulated response data
+-   * @private
+-   */
+-  async _getSimulatedData(endpoint, data = {}) {
+-    // ... Implementation of simulated data generation ...
+-  }
+-
+   /**
+@@ -1161,173 +1084,48 @@ class HyperliquidDataService {
+   }
+   
+   /**
+-   * Set the API mode (LIVE or DEMO)
+-   * @param {string} mode - The mode to set (API_MODES.LIVE or API_MODES.DEMO)
++   * Set API mode (always LIVE)
+    * @private
+    */
+   _setMode(mode) {
+-    // If mode isn't changing, do nothing
+-    if (this.mode === mode) {
+-      return;
+-    }
+-    
+-    console.log(`Changing API mode from ${this.mode} to ${mode}`);
+-    
+-    // Stop any existing demo simulations
+-    this._stopAllSimulations();
+-    
+-    // Set the new mode
+-    this.mode = mode;
+-    
+-    // Take action based on the new mode
+-    if (mode === API_MODES.DEMO) {
+-      // Start demo simulations if in demo mode
+-      this._startSimulations();
+-      this._updateStatus('disconnected');
+-    } else {
+-      // Connect to real WebSocket if in live mode
+-      this.connectWebSocket();
+-    }
++    // Always use LIVE mode regardless of what's passed
++    this.mode = API_MODES.LIVE;
++
++    // Connect to real WebSocket
++    this.connectWebSocket();
+     
+-    // Notify all components about the mode change
++    // Notify all components about the mode
+     window.dispatchEvent(new CustomEvent('hyperliquid-mode-change', { 
+-      detail: { mode } 
++      detail: { mode: API_MODES.LIVE } 
+     }));
+   }
+   
+   /**
+-   * Check if demo mode is currently active
+-   * @returns {boolean} True if demo mode is active
++   * Check if demo mode is active (always returns false)
++   * @returns {boolean} Always false
+    */
+   isDemoActive() {
+-    return this.mode === API_MODES.DEMO;
++    return false;
+   }
+   
+   /**
+-   * Check if live mode is currently active
+-   * @returns {boolean} True if live mode is active
++   * Check if live mode is active (always returns true)
++   * @returns {boolean} Always true
+    */
+   isLiveActive() {
+-    return this.mode === API_MODES.LIVE;
++    return true;
+   }
+   
+   /**
+-   * Force demo mode for testing without API
++   * Enable demo mode (does nothing, always uses live mode)
+    */
+   enableDemoMode() {
+-    console.log('Manually enabling DEMO MODE...');
+-    this._setMode(API_MODES.DEMO);
++    console.log('Demo mode is disabled. Always using LIVE mode.');
++    // Do nothing
+   }
+   
+   /**
+-   * Disable demo mode and switch to live API
+-   */
+-  disableDemoMode() {
+-    return this.enableLiveMode();
+-  }
+-  
+-  /**
+-   * Enable live mode with real API connection
++   * Enable live mode
+    */
+   enableLiveMode() {
+     console.log('Attempting to enable LIVE MODE...');
+@@ -1337,130 +1135,14 @@ class HyperliquidDataService {
+   }
+   
+   /**
+-   * Stop all demo data simulations
++   * Stop all demo data simulations (stub - demo mode disabled)
+    * @private
+    */
+   _stopAllSimulations() {
+-    if (this.demoIntervals && this.demoIntervals.length > 0) {
+-      console.log(`Stopping ${this.demoIntervals.length} demo simulations...`);
+-      
+-      // Clear all interval timers
+-      this.demoIntervals.forEach(interval => {
+-        if (interval) {
+-          clearInterval(interval);
+-        }
+-      });
+-      
+-      // Reset the intervals array
+-      this.demoIntervals = [];
+-      
+-      console.log('All demo simulations stopped');
+-    }
++    // Demo mode is disabled, this is a no-op
+   }
+   
+   /**
+-   * Start demo data simulations
++   * Start demo data simulations (stub - demo mode disabled)
+    * @private
+    */
+-  _startSimulations() {
+-    // Don't start simulations if not in demo mode
+-    if (!this.isDemoActive()) {
+-      console.warn('Not starting simulations because not in DEMO MODE');
+-      return;
+-    }
+-    
+-    console.log('Starting demo data simulations...');
+-    
+-    // Make sure no existing simulations are running
+-    this._stopAllSimulations();
+-    
+-    // Create simulation intervals for different data types
+-    this._createTickerSimulation();
+-    this._createOrderBookSimulation();
+-    this._createTradesSimulation();
+-    
+-    console.log(`Started ${this.demoIntervals.length} demo simulations`);
+-  }
+-  
+-  /**
+-   * Create ticker data simulation
+-   * @private
+-   */
+-  _createTickerSimulation() {
+-    // Don't create simulation if not in demo mode
+-    if (!this.isDemoActive()) return;
+-    
+-    console.log('Creating ticker data simulation...');
+-    
+-    // Create and store the interval
+-    const interval = setInterval(() => {
+-      // Exit early if no longer in demo mode
+-      if (!this.isDemoActive()) {
+-        this._stopAllSimulations();
+-        return;
+-      }
+-      
+-      // Process all ticker subscriptions
+-      this.subscriptions.forEach((callback, subscriptionId) => {
+-        if (subscriptionId.startsWith('ticker:')) {
+-          const symbol = subscriptionId.split(':')[1];
+-          const basePrice = symbol.includes('BTC') ? 58000 : 
+-                          symbol.includes('ETH') ? 3200 : 
+-                          symbol.includes('SOL') ? 145 : 100;
+-          
+-          const randomChange = (Math.random() * 2 - 1) * 0.001; // +/- 0.1%
+-          const price = basePrice * (1 + randomChange);
+-          
+-          const tickerData = {
+-            symbol,
+-            lastPrice: price,
+-            bidPrice: price * 0.9995,
+-            askPrice: price * 1.0005,
+-            volume: Math.random() * 10000,
+-            timestamp: Date.now()
+-          };
+-          
+-          // Send the simulated data to the callback
+-          callback(tickerData);
+-        }
+-      });
+-    }, 1000);
+-    
+-    // Store the interval for later cleanup
+-    this.demoIntervals.push(interval);
+-  }
+-  
+-  /**
+-   * Create order book data simulation
+-   * @private
+-   */
+-  _createOrderBookSimulation() {
+-    // ... Implementation of order book simulation ...
+-  }
+-  
+-  /**
+-   * Create trades data simulation
+-   * @private
+-   */
+-  _createTradesSimulation() {
+-    // ... Implementation of trades simulation ...
+-  }
++  _startSimulations() {
++    // Demo mode is disabled, this is a no-op
++  }
+ }
+-- 
+2.34.1
