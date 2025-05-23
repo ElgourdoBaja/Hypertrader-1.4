@@ -294,6 +294,36 @@ const Trading = () => {
     }
   }, [selectedSymbol, timeframe]);
   
+  // Load order book data
+  useEffect(() => {
+    const loadOrderBook = async () => {
+      try {
+        const hyperliquidDataService = (await import('../../services/hyperliquidDataService')).default;
+        
+        // Fetch real order book data
+        const orderBookData = await hyperliquidDataService.getOrderBook(selectedSymbol);
+        
+        if (orderBookData) {
+          // Format and use real order book data
+          setBids(orderBookData.bids || []);
+          setAsks(orderBookData.asks || []);
+        }
+      } catch (error) {
+        console.error('Error loading order book:', error);
+        // If error, use empty arrays
+        setBids([]);
+        setAsks([]);
+      }
+    };
+    
+    loadOrderBook();
+    
+    // Set up refresh interval
+    const refreshInterval = setInterval(loadOrderBook, 1000);
+    
+    return () => clearInterval(refreshInterval);
+  }, [selectedSymbol]);
+  
   // Generate mock candle data
   const generateMockCandleData = () => {
     const data = [];
