@@ -1179,11 +1179,11 @@ class HyperliquidDataService {
   }
   
   /**
-   * Check if live mode is currently active
-   * @returns {boolean} True if live mode is active
+   * Check if live mode is active (always returns true)
+   * @returns {boolean} Always true
    */
   isLiveActive() {
-    return this.mode === API_MODES.LIVE;
+    return true;
   }
   
   /**
