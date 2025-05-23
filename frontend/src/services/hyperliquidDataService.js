@@ -949,13 +949,15 @@ class HyperliquidDataService {
     console.log(`Fetching order book data for ${symbol}`);
     
     try {
-      // Make API request to get order book
-      const endpoint = `orderbook/${symbol}`;
+      // Make API request to get order book - this is an info request that needs public address
+      const endpoint = `info/orderbook`;
       const params = {
-        depth
+        symbol,
+        depth,
+        // The public address will be added by _apiRequest for info requests
       };
       
-      const response = await this._apiRequest(endpoint, params);
+      const response = await this._apiRequest(endpoint, params, 'GET', false);
       
       if (response && response.bids && response.asks) {
         return response;
