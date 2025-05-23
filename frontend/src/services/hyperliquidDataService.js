@@ -800,105 +800,50 @@ class HyperliquidDataService {
       ]
     };
   }
+  /**
+   * Get available markets
+   * @returns {Promise<Array>} Available markets
+   */
   async getMarkets() {
     console.log('Fetching available markets');
     
     try {
-      // First try the info endpoint
-      try {
-        const response = await fetch(`${HYPERLIQUID_API_CONFIG.REST_API_URL}/info`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            type: 'meta'
-          })
-        });
-        
-        if (!response.ok) {
-          throw new Error(`API request failed with status ${response.status}: ${response.statusText}`);
-        }
-        
-        const data = await response.json();
-        
-        if (data && data.universe) {
-          // Successfully connected to API - ensure demo mode is disabled
-          if (this.demoMode) {
-            console.log('Real API connection confirmed - disabling demo mode');
-            this.disableDemoMode();
-            this._updateStatus('connected');
-          }
-          
-          // Transform the response into a format the app expects
-          return data.universe.map(market => ({
-            symbol: market.name + '-PERP',
-            baseAsset: market.name,
-            quoteAsset: 'USD',
-            status: 'TRADING',
-            minOrderSize: market.minSize || 0.001,
-            tickSize: market.tickSize || 0.01,
-            minNotional: market.minNotional || 10
-          }));
-        }
-      } catch (error) {
-        console.error('Error fetching markets from info endpoint:', error);
+      // Try the info endpoint
+      const response = await fetch(`${HYPERLIQUID_API_CONFIG.REST_API_URL}/info`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          type: 'meta'
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`API request failed with status ${response.status}: ${response.statusText}`);
       }
       
-      // Fallback to exchange endpoint
-      try {
-        const response = await fetch(`${HYPERLIQUID_API_CONFIG.REST_API_URL}/exchange/v1/all_mids`, {
-          method: 'GET',
-          headers: HYPERLIQUID_API_CONFIG.DEFAULT_HEADERS
-        });
-        
-        if (!response.ok) {
-          throw new Error(`API request failed with status ${response.status}: ${response.statusText}`);
-        }
-        
-        const data = await response.json();
-        
-        if (data) {
-          // Successfully connected to API - ensure demo mode is disabled
-          if (this.demoMode) {
-            console.log('Real API connection confirmed - disabling demo mode');
-            this.disableDemoMode();
-            this._updateStatus('connected');
-          }
-          
-          // Transform the response into a format the app expects
-          return Object.keys(data).map(symbol => ({
-            symbol: symbol + '-PERP',
-            baseAsset: symbol,
-            quoteAsset: 'USD',
-            status: 'TRADING',
-            minOrderSize: 0.001,
-            tickSize: 0.01,
-            minNotional: 10
-          }));
-        }
-      } catch (error) {
-        console.error('Error fetching markets from exchange endpoint:', error);
+      const data = await response.json();
+      
+      if (data && data.universe) {
+        // Transform the response into a format the app expects
+        return data.universe.map(market => ({
+          symbol: market.name + '-PERP',
+          baseAsset: market.name,
+          quoteAsset: 'USD',
+          status: 'TRADING',
+          minOrderSize: market.minSize || 0.001,
+          tickSize: market.tickSize || 0.01,
+          minNotional: market.minNotional || 10,
+          lastPrice: market.lastPrice || 0
+        }));
       }
       
-      // If we reach here, we couldn't get market data from the API
-      // Ensure demo mode is enabled and return simulated data
-      if (!this.isDemoActive()) {
-        console.warn('Failed to fetch markets from API, falling back to demo mode');
-        this.enableDemoMode();
-      }
-      
-      return this._getSimulatedMarkets().markets;
+      console.warn('Invalid response format from markets API:', data);
+      return [];
     } catch (error) {
-      this.defaultErrorHandler(error);
-      
-      // Ensure demo mode is enabled and return simulated data
-      if (!this.isDemoActive()) {
-        console.warn('Error fetching markets, falling back to demo mode');
-        this.enableDemoMode();
-      }
-      
-      return this._getSimulatedMarkets().markets;
+      console.error('Error fetching markets:', error);
+      return [];
     }
   }
   
