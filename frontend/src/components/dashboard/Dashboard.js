@@ -17,98 +17,60 @@ const Dashboard = () => {
         // Import hyperliquidDataService dynamically to avoid circular dependencies
         const hyperliquidDataService = (await import('../../services/hyperliquidDataService')).default;
         
-        // Check if we're in live mode
-        if (hyperliquidDataService.isLiveConnection()) {
-          console.log('Fetching real dashboard data from API...');
-          try {
-            // In a real implementation, we would fetch real dashboard data from the API
-            // For now, just log that we're in live mode but still using mock data
-            console.log('Live connection detected, but real dashboard data not yet implemented');
+        console.log('Fetching real dashboard data from API...');
+        try {
+          // Get real account information
+          const accountInfo = await hyperliquidDataService.getAccountInfo();
+          
+          if (accountInfo) {
+            // Use real data
+            setPortfolioValue(accountInfo.totalValue || 0);
+            setDailyPnL(accountInfo.dailyPnL || 0);
+            setDailyPnLPercent(accountInfo.dailyPnLPercent || 0);
             
-            // In the future, implement real API calls here
-            
-            // Try to get some real market data for display
-            const markets = await hyperliquidDataService.getMarkets();
-            if (Array.isArray(markets) && markets.length > 0) {
-              console.log(`Found ${markets.length} markets from API`);
-              
-              // Use the first few markets to create simulated positions
-              const topMarkets = markets.slice(0, 3);
-              
-              // Create simulated positions based on real market symbols
-              const simulatedPositions = topMarkets.map((market, index) => ({
-                id: index + 1,
-                symbol: market.symbol,
-                size: Math.random() * 10,
-                entryPrice: market.lastPrice || 1000,
-                currentPrice: market.lastPrice ? market.lastPrice * (1 + (Math.random() * 0.1 - 0.05)) : 1050,
-                pnl: Math.random() * 1000 - 500,
-                pnlPercent: Math.random() * 5 - 2.5
-              }));
-              
-              setActivePositions(simulatedPositions);
-              
-              // Create simulated trades
-              const simulatedTrades = [...topMarkets, markets[3] || topMarkets[0]].map((market, index) => ({
-                id: index + 1,
-                symbol: market.symbol,
-                type: Math.random() > 0.5 ? 'BUY' : 'SELL',
-                size: Math.random() * 10,
-                price: market.lastPrice || 1000,
-                timestamp: new Date(Date.now() - index * 1000 * 60).toISOString()
-              }));
-              
-              setRecentTrades(simulatedTrades);
+            // Use real positions if available
+            if (Array.isArray(accountInfo.positions)) {
+              setActivePositions(accountInfo.positions);
+            } else {
+              setActivePositions([]);
             }
-          } catch (error) {
-            console.error('Error fetching real dashboard data:', error);
+            
+            // Use real trades if available
+            if (Array.isArray(accountInfo.recentTrades)) {
+              setRecentTrades(accountInfo.recentTrades);
+            } else {
+              setRecentTrades([]);
+            }
+          } else {
+            // No data received, set empty state
+            setPortfolioValue(0);
+            setDailyPnL(0);
+            setDailyPnLPercent(0);
+            setActivePositions([]);
+            setRecentTrades([]);
           }
+        } catch (error) {
+          console.error('Error fetching real dashboard data:', error);
+          // On error, set empty state
+          setPortfolioValue(0);
+          setDailyPnL(0);
+          setDailyPnLPercent(0);
+          setActivePositions([]);
+          setRecentTrades([]);
         }
-        
-        // Simulate API call to get data (fallback to mock data)
-        const timer = setTimeout(() => {
-          // If we haven't set positions from real data, use mock data
-          if (activePositions.length === 0) {
-            setActivePositions([
-              { id: 1, symbol: 'BTC-PERP', size: 0.5, entryPrice: 57800, currentPrice: 59200, pnl: 700, pnlPercent: 2.42 },
-              { id: 2, symbol: 'ETH-PERP', size: 5, entryPrice: 3200, currentPrice: 3280, pnl: 400, pnlPercent: 2.5 },
-              { id: 3, symbol: 'SOL-PERP', size: 40, entryPrice: 145, currentPrice: 142, pnl: -120, pnlPercent: -2.07 },
-            ]);
-          }
-          
-          // If we haven't set trades from real data, use mock data
-          if (recentTrades.length === 0) {
-            setRecentTrades([
-              { id: 1, symbol: 'BTC-PERP', type: 'BUY', size: 0.5, price: 57800, timestamp: '2025-03-17T10:23:45Z' },
-              { id: 2, symbol: 'ETH-PERP', type: 'BUY', size: 5, price: 3200, timestamp: '2025-03-17T10:15:22Z' },
-              { id: 3, symbol: 'SOL-PERP', type: 'BUY', size: 40, price: 145, timestamp: '2025-03-17T09:58:31Z' },
-              { id: 4, symbol: 'DOT-PERP', type: 'SELL', size: 100, price: 23.5, timestamp: '2025-03-17T09:45:12Z' },
-            ]);
-          }
-          
-          // Set portfolio values
-          setPortfolioValue(125000);
-          setDailyPnL(3750);
-          setDailyPnLPercent(3.1);
-          
-          setIsLoading(false);
-        }, 1000);
-        
-        return () => clearTimeout(timer);
       } catch (error) {
-        console.error('Error in loadDashboardData:', error);
+        console.error('Error loading dashboard data:', error);
+      } finally {
         setIsLoading(false);
       }
     };
     
     loadDashboardData();
     
-    // Refresh data every 30 seconds
+    // Refresh every 30 seconds
     const refreshInterval = setInterval(loadDashboardData, 30000);
     
-    return () => {
-      clearInterval(refreshInterval);
-    };
+    return () => clearInterval(refreshInterval);
   }, []);
 
   // Format currency
