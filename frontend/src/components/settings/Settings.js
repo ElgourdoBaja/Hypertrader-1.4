@@ -29,7 +29,33 @@ const Settings = () => {
     isLive: hyperliquidDataService.isLiveConnection()
   });
   
-  // Load settings on component mount and set up status checking
+  // Directly set to live mode and remove demo mode toggle
+  useEffect(() => {
+    async function initializeApiConnection() {
+      try {
+        // Import dynamically to avoid circular dependencies
+        const { default: hyperliquidDataService } = await import('../../services/hyperliquidDataService');
+        
+        // Always set to live mode
+        hyperliquidDataService.enableLiveMode();
+        
+        // Set the UI to reflect live mode
+        setConnectionStatus({
+          isLive: true,
+          result: {
+            success: true,
+            message: 'Forced LIVE mode with real API connection'
+          }
+        });
+      } catch (error) {
+        console.error('Error initializing API connection:', error);
+      }
+    }
+    
+    initializeApiConnection();
+  }, []);
+
+  // Load settings on component mount
   useEffect(() => {
     const loadSettings = async () => {
       if (window.electronAPI) {
@@ -46,20 +72,7 @@ const Settings = () => {
       }
     };
     
-    // Set up a regular check for connection status
-    const statusInterval = setInterval(() => {
-      setConnectionStatus(prevState => ({
-        ...prevState,
-        isLive: hyperliquidDataService.isLiveConnection()
-      }));
-    }, 2000);
-    
     loadSettings();
-    
-    // Clean up on unmount
-    return () => {
-      clearInterval(statusInterval);
-    };
   }, []);
   
   // Save settings
