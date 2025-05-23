@@ -1158,32 +1158,15 @@ class HyperliquidDataService {
    * @private
    */
   _setMode(mode) {
-    // If mode isn't changing, do nothing
-    if (this.mode === mode) {
-      return;
-    }
+    // Always use LIVE mode regardless of what's passed
+    this.mode = API_MODES.LIVE;
     
-    console.log(`Changing API mode from ${this.mode} to ${mode}`);
+    // Connect to real WebSocket
+    this.connectWebSocket();
     
-    // Stop any existing demo simulations
-    this._stopAllSimulations();
-    
-    // Set the new mode
-    this.mode = mode;
-    
-    // Take action based on the new mode
-    if (mode === API_MODES.DEMO) {
-      // Start demo simulations if in demo mode
-      this._startSimulations();
-      this._updateStatus('disconnected');
-    } else {
-      // Connect to real WebSocket if in live mode
-      this.connectWebSocket();
-    }
-    
-    // Notify all components about the mode change
+    // Notify all components about the mode
     window.dispatchEvent(new CustomEvent('hyperliquid-mode-change', { 
-      detail: { mode } 
+      detail: { mode: API_MODES.LIVE } 
     }));
   }
   
