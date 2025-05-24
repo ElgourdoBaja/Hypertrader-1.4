@@ -41,6 +41,7 @@ class HyperliquidDataService {
     // API credentials
     this.apiKey = null;
     this.apiSecret = null;
+    this.walletAddress = null;
     
     // Default error handler
     this.defaultErrorHandler = (error) => {
@@ -53,6 +54,7 @@ class HyperliquidDataService {
    * @param {Object} options - Configuration options
    * @param {string} options.apiKey - Hyperliquid API key
    * @param {string} options.apiSecret - Hyperliquid API secret
+   * @param {string} options.walletAddress - Hyperliquid wallet address
    * @param {Function} options.onStatusChange - Callback for status changes
    */
   async initialize(options = {}) {
@@ -61,6 +63,7 @@ class HyperliquidDataService {
     // Store API credentials
     this.apiKey = options.apiKey;
     this.apiSecret = options.apiSecret;
+    this.walletAddress = options.walletAddress;
     
     // Register status change listener if provided
     if (options.onStatusChange) {
@@ -808,7 +811,7 @@ class HyperliquidDataService {
     console.log('Fetching available markets');
     
     try {
-      // Try the info endpoint
+      // Use the correct Hyperliquid API endpoint for meta information
       const response = await fetch(`${HYPERLIQUID_API_CONFIG.REST_API_URL}/info`, {
         method: 'POST',
         headers: {
@@ -828,14 +831,14 @@ class HyperliquidDataService {
       if (data && data.universe) {
         // Transform the response into a format the app expects
         return data.universe.map(market => ({
-          symbol: market.name + '-PERP',
+          symbol: market.name,
           baseAsset: market.name,
           quoteAsset: 'USD',
           status: 'TRADING',
-          minOrderSize: market.minSize || 0.001,
-          tickSize: market.tickSize || 0.01,
-          minNotional: market.minNotional || 10,
-          lastPrice: market.lastPrice || 0
+          minOrderSize: parseFloat(market.szDecimals) || 0.001,
+          tickSize: parseFloat(market.tickSize) || 0.01,
+          minNotional: 10,
+          lastPrice: 0
         }));
       }
       
@@ -856,31 +859,65 @@ class HyperliquidDataService {
    */
   async getHistoricalCandles(symbol, timeframe, limit = 200) {
     try {
-      const coin = symbol.split('-')[0]; // Extract coin name from symbol (e.g., BTC from BTC-PERP)
-      
-      const response = await this._apiRequest('info/candles', {
-        coin,
-        interval: timeframe,
-        limit
+      // Get candlestick data from Hyperliquid API
+      const response = await fetch(`${HYPERLIQUID_API_CONFIG.REST_API_URL}/info`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          type: 'candleSnapshot',
+          req: {
+            coin: symbol,
+            interval: timeframe,
+            startTime: Date.now() - (limit * this._getIntervalMs(timeframe)),
+            endTime: Date.now()
+          }
+        })
       });
       
-      if (Array.isArray(response)) {
+      if (!response.ok) {
+        throw new Error(`API request failed with status ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      if (Array.isArray(data)) {
         // Transform the response into a format the app expects
-        return response.map(candle => ({
-          time: candle.time || candle.timestamp,
-          open: candle.open,
-          high: candle.high,
-          low: candle.low,
-          close: candle.close,
-          volume: candle.volume
+        return data.map(candle => ({
+          time: Math.floor(candle.t / 1000), // Convert to seconds for LightweightCharts
+          open: parseFloat(candle.o),
+          high: parseFloat(candle.h),
+          low: parseFloat(candle.l),
+          close: parseFloat(candle.c),
+          volume: parseFloat(candle.v)
         }));
       }
       
       return [];
     } catch (error) {
-      this.defaultErrorHandler(error);
+      console.error(`Error fetching candles for ${symbol}:`, error);
       return [];
     }
+  }
+  
+  /**
+   * Convert timeframe string to milliseconds
+   * @param {string} timeframe - Timeframe string (e.g., '1m', '1h', '1d')
+   * @returns {number} Milliseconds
+   * @private
+   */
+  _getIntervalMs(timeframe) {
+    const intervals = {
+      '1m': 60 * 1000,
+      '5m': 5 * 60 * 1000,
+      '15m': 15 * 60 * 1000,
+      '30m': 30 * 60 * 1000,
+      '1h': 60 * 60 * 1000,
+      '4h': 4 * 60 * 60 * 1000,
+      '1d': 24 * 60 * 60 * 1000
+    };
+    return intervals[timeframe] || intervals['1h'];
   }
   
   /**
@@ -890,24 +927,38 @@ class HyperliquidDataService {
    */
   async getTicker(symbol) {
     try {
-      const coin = symbol.split('-')[0]; // Extract coin name from symbol
+      // Get all mids (mid prices) from Hyperliquid
+      const response = await fetch(`${HYPERLIQUID_API_CONFIG.REST_API_URL}/info`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          type: 'allMids'
+        })
+      });
       
-      const response = await this._apiRequest('info/ticker', { coin });
+      if (!response.ok) {
+        throw new Error(`API request failed with status ${response.status}: ${response.statusText}`);
+      }
       
-      if (response) {
+      const data = await response.json();
+      
+      if (data && data[symbol]) {
+        const price = parseFloat(data[symbol]);
         return {
           symbol,
-          lastPrice: response.lastPrice || response.last || 0,
-          bidPrice: response.bidPrice || response.bid || 0,
-          askPrice: response.askPrice || response.ask || 0,
-          volume: response.volume || response.baseVolume || 0,
-          timestamp: response.timestamp || Date.now()
+          lastPrice: price,
+          bidPrice: price * 0.9995, // Approximate bid/ask spread
+          askPrice: price * 1.0005,
+          volume: 0, // Volume not available in allMids
+          timestamp: Date.now()
         };
       }
       
       return null;
     } catch (error) {
-      this.defaultErrorHandler(error);
+      console.error(`Error fetching ticker for ${symbol}:`, error);
       return null;
     }
   }
@@ -922,19 +973,43 @@ class HyperliquidDataService {
     console.log(`Fetching order book data for ${symbol}`);
     
     try {
-      // Make API request to get order book
-      const endpoint = `orderbook/${symbol}`;
-      const params = {
-        depth
-      };
+      // Get order book from Hyperliquid API
+      const response = await fetch(`${HYPERLIQUID_API_CONFIG.REST_API_URL}/info`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          type: 'l2Book',
+          coin: symbol
+        })
+      });
       
-      const response = await this._apiRequest(endpoint, params);
-      
-      if (response && response.bids && response.asks) {
-        return response;
+      if (!response.ok) {
+        throw new Error(`API request failed with status ${response.status}: ${response.statusText}`);
       }
       
-      console.warn('Invalid response format from order book API:', response);
+      const data = await response.json();
+      
+      if (data && data.levels) {
+        // Parse Hyperliquid order book format
+        const bids = data.levels.filter(level => level.side === 'B')
+          .slice(0, depth)
+          .map(level => [parseFloat(level.px), parseFloat(level.sz)]);
+        
+        const asks = data.levels.filter(level => level.side === 'A')
+          .slice(0, depth)
+          .map(level => [parseFloat(level.px), parseFloat(level.sz)]);
+        
+        return {
+          symbol,
+          bids,
+          asks,
+          timestamp: Date.now()
+        };
+      }
+      
+      console.warn('Invalid response format from order book API:', data);
       return {
         bids: [],
         asks: [],
@@ -960,25 +1035,35 @@ class HyperliquidDataService {
     console.log(`Fetching recent trades for ${symbol}`);
     
     try {
-      // Make API request to get recent trades
-      const endpoint = `trades/${symbol}`;
-      const params = {
-        limit
-      };
+      // Get recent trades from Hyperliquid API
+      const response = await fetch(`${HYPERLIQUID_API_CONFIG.REST_API_URL}/info`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          type: 'recentTrades',
+          coin: symbol
+        })
+      });
       
-      const response = await this._apiRequest(endpoint, params);
+      if (!response.ok) {
+        throw new Error(`API request failed with status ${response.status}: ${response.statusText}`);
+      }
       
-      if (Array.isArray(response)) {
-        return response.map(trade => ({
-          id: trade.id || `trade-${Date.now()}-${Math.random()}`,
-          price: trade.price,
-          amount: trade.quantity || trade.amount,
-          side: trade.side.toLowerCase(),
-          timestamp: new Date(trade.time || trade.timestamp)
+      const data = await response.json();
+      
+      if (Array.isArray(data)) {
+        return data.slice(0, limit).map(trade => ({
+          id: `trade-${trade.time}-${Math.random()}`,
+          price: parseFloat(trade.px),
+          amount: parseFloat(trade.sz),
+          side: trade.side === 'B' ? 'buy' : 'sell',
+          timestamp: new Date(trade.time)
         }));
       }
       
-      console.warn('Invalid response format from trades API:', response);
+      console.warn('Invalid response format from trades API:', data);
       return [];
     } catch (error) {
       console.error(`Error fetching recent trades for ${symbol}:`, error);
@@ -1059,6 +1144,8 @@ class HyperliquidDataService {
       isLiveMode: true,
       isDemoMode: false,
       hasCredentials: !!(this.apiKey && this.apiSecret),
+      hasWalletAddress: !!this.walletAddress,
+      walletAddress: this.walletAddress ? `${this.walletAddress.slice(0, 6)}...${this.walletAddress.slice(-4)}` : 'Not set',
       demoSimulationsActive: 0,
       subscriptionsCount: this.subscriptions ? this.subscriptions.size : 0,
       apiUrl: HYPERLIQUID_API_CONFIG.REST_API_URL,
@@ -1202,25 +1289,70 @@ class HyperliquidDataService {
   async getAccountInfo() {
     console.log('Fetching account information');
     
+    if (!this.apiKey || !this.apiSecret) {
+      console.warn('No API credentials available for account info');
+      return {
+        accountId: '',
+        balance: 0,
+        margin: 0,
+        available: 0,
+        totalValue: 0,
+        dailyPnL: 0,
+        dailyPnLPercent: 0,
+        positions: [],
+        recentTrades: []
+      };
+    }
+    
+    // Use wallet address if available, otherwise fall back to API key
+    const userAddress = this.walletAddress || this.apiKey;
+    console.log(`Querying account info for user: ${userAddress}`);
+    
     try {
-      // Make API request to get account info
-      const response = await this._apiRequest('account');
+      // Get user state from Hyperliquid API
+      const response = await fetch(`${HYPERLIQUID_API_CONFIG.REST_API_URL}/info`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          type: 'clearinghouseState',
+          user: userAddress // Use wallet address for account queries
+        })
+      });
       
-      if (response) {
+      if (!response.ok) {
+        throw new Error(`API request failed with status ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data) {
+        // Parse Hyperliquid account data
+        const marginSummary = data.marginSummary || {};
+        const assetPositions = data.assetPositions || [];
+        
         return {
-          accountId: response.accountId || '',
-          balance: response.balance || 0,
-          margin: response.margin || 0,
-          available: response.available || 0,
-          totalValue: response.totalValue || 0,
-          dailyPnL: response.dailyPnL || 0,
-          dailyPnLPercent: response.dailyPnLPercent || 0,
-          positions: Array.isArray(response.positions) ? response.positions : [],
-          recentTrades: Array.isArray(response.recentTrades) ? response.recentTrades : []
+          accountId: this.apiKey,
+          balance: parseFloat(marginSummary.accountValue) || 0,
+          margin: parseFloat(marginSummary.totalMarginUsed) || 0,
+          available: parseFloat(marginSummary.accountValue) - parseFloat(marginSummary.totalMarginUsed) || 0,
+          totalValue: parseFloat(marginSummary.accountValue) || 0,
+          dailyPnL: parseFloat(marginSummary.totalNtlPos) || 0,
+          dailyPnLPercent: 0,
+          positions: assetPositions.map(pos => ({
+            symbol: pos.position?.coin || '',
+            size: parseFloat(pos.position?.szi) || 0,
+            entryPrice: parseFloat(pos.position?.entryPx) || 0,
+            currentPrice: parseFloat(pos.position?.positionValue) / parseFloat(pos.position?.szi) || 0,
+            pnl: parseFloat(pos.position?.unrealizedPnl) || 0,
+            pnlPercent: 0
+          })),
+          recentTrades: []
         };
       }
       
-      console.warn('Invalid response format from account API:', response);
+      console.warn('Invalid response format from account API:', data);
       return {
         accountId: '',
         balance: 0,

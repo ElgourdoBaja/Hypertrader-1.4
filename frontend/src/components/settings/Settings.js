@@ -28,31 +28,31 @@ const Settings = () => {
     result: null,
     isLive: hyperliquidDataService.isLiveConnection()
   });
+
+  const [showCredentialModal, setShowCredentialModal] = useState(false);
+  const [credentialForm, setCredentialForm] = useState({
+    apiKey: '',
+    apiSecret: '',
+    walletAddress: ''
+  });
   
   // Directly set to live mode and remove demo mode toggle
   useEffect(() => {
-    async function initializeApiConnection() {
-      try {
-        // Import dynamically to avoid circular dependencies
-        const { default: hyperliquidDataService } = await import('../../services/hyperliquidDataService');
-        
-        // Always set to live mode
-        hyperliquidDataService.enableLiveMode();
-        
-        // Set the UI to reflect live mode
-        setConnectionStatus({
-          isLive: true,
-          result: {
-            success: true,
-            message: 'Forced LIVE mode with real API connection'
-          }
-        });
-      } catch (error) {
-        console.error('Error initializing API connection:', error);
-      }
+    try {
+      // Always set to live mode
+      hyperliquidDataService.enableLiveMode();
+      
+      // Set the UI to reflect live mode
+      setConnectionStatus({
+        isLive: true,
+        result: {
+          success: true,
+          message: 'Forced LIVE mode with real API connection'
+        }
+      });
+    } catch (error) {
+      console.error('Error initializing API connection:', error);
     }
-    
-    initializeApiConnection();
   }, []);
 
   // Load settings on component mount
@@ -116,33 +116,9 @@ const Settings = () => {
     });
   };
 
-  // Directly set to live mode and remove demo mode toggle
-  useEffect(() => {
-    async function initializeApiConnection() {
-      try {
-        // Import dynamically to avoid circular dependencies
-        const { default: hyperliquidDataService } = await import('../../services/hyperliquidDataService');
-        
-        // Always set to live mode
-        hyperliquidDataService.enableLiveMode();
-        
-        // Set the UI to reflect live mode
-        setConnectionStatus({
-          isLive: true,
-          result: {
-            success: true,
-            message: 'Forced LIVE mode with real API connection'
-          }
-        });
-      } catch (error) {
-        console.error('Error initializing API connection:', error);
-      }
-    }
-    
-    initializeApiConnection();
-  }, []);
-
   const updateApiCredentials = () => {
+    console.log('updateApiCredentials called, showCredentialModal:', showCredentialModal);
+    alert('Function called! showCredentialModal: ' + showCredentialModal);
     if (window.electronAPI) {
       window.electronAPI.getApiCredentials()
         .then(creds => {
@@ -151,12 +127,65 @@ const Settings = () => {
         .catch(err => {
           console.error('Failed to get credentials:', err);
         });
+    } else {
+      // Web mode - show credential input modal
+      console.log('Setting showCredentialModal to true');
+      setShowCredentialModal(true);
+      alert('Modal should be showing now. showCredentialModal set to: true');
+    }
+  };
+
+  const handleCredentialSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!credentialForm.apiKey || !credentialForm.apiSecret || !credentialForm.walletAddress) {
+      alert('All fields are required');
+      return;
+    }
+    
+    // Basic validation for Ethereum address format
+    if (!credentialForm.walletAddress.match(/^0x[a-fA-F0-9]{40}$/)) {
+      alert('Wallet Address must be a valid Ethereum address (0x followed by 40 hex characters)');
+      return;
+    }
+    
+    try {
+      // Store in localStorage for web mode
+      localStorage.setItem('hyperliquid_api_key', credentialForm.apiKey);
+      localStorage.setItem('hyperliquid_api_secret', credentialForm.apiSecret);
+      localStorage.setItem('hyperliquid_wallet_address', credentialForm.walletAddress);
+      
+      // Reinitialize the service with new credentials
+      await hyperliquidDataService.initialize({
+        apiKey: credentialForm.apiKey,
+        apiSecret: credentialForm.apiSecret,
+        walletAddress: credentialForm.walletAddress,
+        onStatusChange: (status) => {
+          console.log(`Hyperliquid connection status: ${status}`);
+        }
+      });
+      
+      setShowCredentialModal(false);
+      setCredentialForm({ apiKey: '', apiSecret: '', walletAddress: '' });
+      alert('Credentials updated successfully! Please refresh the page to see updated data.');
+      
+    } catch (error) {
+      console.error('Failed to update credentials:', error);
+      alert('Failed to update credentials');
     }
   };
 
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-6">Settings</h1>
+      
+      {/* TEST BUTTON */}
+      <button 
+        onClick={() => alert('TEST BUTTON WORKS!')}
+        style={{backgroundColor: 'red', color: 'white', padding: '10px', marginBottom: '20px'}}
+      >
+        TEST BUTTON - CLICK ME
+      </button>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* API Settings */}
@@ -168,7 +197,11 @@ const Settings = () => {
             <div className="flex items-center space-x-2">
               <button 
                 className="btn btn-primary"
-                onClick={updateApiCredentials}
+                onClick={() => {
+                  console.log('BUTTON CLICKED!');
+                  alert('BUTTON CLICKED!');
+                  updateApiCredentials();
+                }}
               >
                 Update API Credentials
               </button>
@@ -180,7 +213,11 @@ const Settings = () => {
                   console.log('API Debug Info:', debugInfo);
                   alert('Debug info logged to console.\n\n' + 
                         'Connection Status: ' + debugInfo.connectionStatus + '\n' +
-                        'Live Mode: ' + debugInfo.isLiveMode);
+                        'Live Mode: ' + debugInfo.isLiveMode + '\n' +
+                        'Has Credentials: ' + debugInfo.hasCredentials + '\n' +
+                        'Has Wallet Address: ' + debugInfo.hasWalletAddress + '\n' +
+                        'Wallet Address: ' + debugInfo.walletAddress + '\n' +
+                        'API URL: ' + debugInfo.apiUrl);
                 }}
               >
                 Debug Info
@@ -481,6 +518,74 @@ const Settings = () => {
           Save Settings
         </button>
       </div>
+
+      {/* Credential Modal for Web Mode */}
+      {showCredentialModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-gray-800 p-6 rounded-lg max-w-md w-full mx-4">
+            <h3 className="text-xl font-semibold mb-4 text-white">Update API Credentials</h3>
+            <form onSubmit={handleCredentialSubmit}>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  API Key
+                </label>
+                <input
+                  type="text"
+                  value={credentialForm.apiKey}
+                  onChange={(e) => setCredentialForm({...credentialForm, apiKey: e.target.value})}
+                  className="input"
+                  placeholder="Enter your Hyperliquid API key"
+                />
+              </div>
+              
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  API Secret
+                </label>
+                <input
+                  type="password"
+                  value={credentialForm.apiSecret}
+                  onChange={(e) => setCredentialForm({...credentialForm, apiSecret: e.target.value})}
+                  className="input"
+                  placeholder="Enter your Hyperliquid API secret"
+                />
+              </div>
+              
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  Wallet Address
+                </label>
+                <input
+                  type="text"
+                  value={credentialForm.walletAddress}
+                  onChange={(e) => setCredentialForm({...credentialForm, walletAddress: e.target.value})}
+                  className="input"
+                  placeholder="0x... (Your Ethereum wallet address)"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  This is your Ethereum wallet address that holds your Hyperliquid funds
+                </p>
+              </div>
+              
+              <div className="flex justify-end space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setShowCredentialModal(false)}
+                  className="btn btn-secondary"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                >
+                  Update Credentials
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

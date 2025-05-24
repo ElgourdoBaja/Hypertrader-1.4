@@ -4,6 +4,7 @@ import hyperliquidDataService from '../../services/hyperliquidDataService';
 const ApiSetup = ({ onSetupComplete }) => {
   const [apiKey, setApiKey] = useState('');
   const [apiSecret, setApiSecret] = useState('');
+  const [walletAddress, setWalletAddress] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   
@@ -11,8 +12,14 @@ const ApiSetup = ({ onSetupComplete }) => {
     e.preventDefault();
     setError('');
     
-    if (!apiKey || !apiSecret) {
-      setError('Both API Key and API Secret are required');
+    if (!apiKey || !apiSecret || !walletAddress) {
+      setError('API Key, API Secret, and Wallet Address are all required');
+      return;
+    }
+    
+    // Basic validation for Ethereum address format
+    if (!walletAddress.match(/^0x[a-fA-F0-9]{40}$/)) {
+      setError('Wallet Address must be a valid Ethereum address (0x followed by 40 hex characters)');
       return;
     }
     
@@ -21,13 +28,14 @@ const ApiSetup = ({ onSetupComplete }) => {
     try {
       // For Electron app
       if (window.electronAPI) {
-        const result = await window.electronAPI.saveApiCredentials({ apiKey, apiSecret });
+        const result = await window.electronAPI.saveApiCredentials({ apiKey, apiSecret, walletAddress });
         if (result.success) {
           // Initialize Hyperliquid data service with new credentials
           try {
             await hyperliquidDataService.initialize({
               apiKey,
               apiSecret,
+              walletAddress,
               onStatusChange: (status) => {
                 console.log(`Hyperliquid connection status: ${status}`);
               }
@@ -91,7 +99,7 @@ const ApiSetup = ({ onSetupComplete }) => {
             />
           </div>
           
-          <div className="mb-6">
+          <div className="mb-4">
             <label className="block text-sm font-medium text-gray-300 mb-1" htmlFor="apiSecret">
               API Secret
             </label>
@@ -103,6 +111,23 @@ const ApiSetup = ({ onSetupComplete }) => {
               className="input"
               placeholder="Enter your Hyperliquid API secret"
             />
+          </div>
+          
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-300 mb-1" htmlFor="walletAddress">
+              Wallet Address
+            </label>
+            <input
+              id="walletAddress"
+              type="text"
+              value={walletAddress}
+              onChange={(e) => setWalletAddress(e.target.value)}
+              className="input"
+              placeholder="0x... (Your Ethereum wallet address)"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              This is your Ethereum wallet address that holds your Hyperliquid funds
+            </p>
           </div>
           
           <button
