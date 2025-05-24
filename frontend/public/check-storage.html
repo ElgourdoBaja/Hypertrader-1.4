@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Check LocalStorage</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: #ffffff;
+        }
+        .container {
+            background-color: #2a2a2a;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+        h1 {
+            color: #4CAF50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .storage-item {
+            background-color: #3a3a3a;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 4px solid #4CAF50;
+        }
+        .key {
+            font-weight: bold;
+            color: #4CAF50;
+        }
+        .value {
+            margin-top: 5px;
+            word-break: break-all;
+            font-family: monospace;
+            background-color: #1a1a1a;
+            padding: 10px;
+            border-radius: 3px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>LocalStorage Contents</h1>
+        
+        <button onclick="refreshStorage()">Refresh</button>
+        <button onclick="clearAll()">Clear All</button>
+        
+        <div id="storage-contents">
+            <p>Click "Refresh" to load storage contents...</p>
+        </div>
+    </div>
+
+    <script>
+        function refreshStorage() {
+            const container = document.getElementById('storage-contents');
+            container.innerHTML = '';
+            
+            if (localStorage.length === 0) {
+                container.innerHTML = '<p>No items in localStorage</p>';
+                return;
+            }
+            
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                const value = localStorage.getItem(key);
+                
+                const item = document.createElement('div');
+                item.className = 'storage-item';
+                
+                const keyDiv = document.createElement('div');
+                keyDiv.className = 'key';
+                keyDiv.textContent = key;
+                
+                const valueDiv = document.createElement('div');
+                valueDiv.className = 'value';
+                
+                // Try to parse JSON for better display
+                try {
+                    const parsed = JSON.parse(value);
+                    valueDiv.textContent = JSON.stringify(parsed, null, 2);
+                } catch (e) {
+                    valueDiv.textContent = value;
+                }
+                
+                item.appendChild(keyDiv);
+                item.appendChild(valueDiv);
+                container.appendChild(item);
+            }
+        }
+        
+        function clearAll() {
+            if (confirm('Are you sure you want to clear all localStorage?')) {
+                localStorage.clear();
+                refreshStorage();
+            }
+        }
+        
+        // Auto-refresh on load
+        refreshStorage();
+    </script>
+</body>
+</html>

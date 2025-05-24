@@ -112,6 +112,39 @@ function App() {
             // Connect to WebSocket
             hyperliquidDataService.connectWebSocket();
           }
+        } else {
+          // For web mode, try to get credentials from localStorage
+          const storedApiKey = localStorage.getItem('hyperliquid_api_key');
+          const storedApiSecret = localStorage.getItem('hyperliquid_api_secret');
+          const storedWalletAddress = localStorage.getItem('hyperliquid_wallet_address');
+          
+          if (storedApiKey && storedApiSecret && storedWalletAddress) {
+            console.log("Web mode detected - using stored credentials");
+            setIsApiConfigured(true);
+            
+            await hyperliquidDataService.initialize({
+              apiKey: storedApiKey,
+              apiSecret: storedApiSecret,
+              walletAddress: storedWalletAddress,
+              onStatusChange: (status) => {
+                console.log(`Hyperliquid connection status: ${status}`);
+              }
+            });
+          } else {
+            // For web testing, temporarily set as configured to test the dashboard
+            console.log("Web mode detected - no stored credentials, using test mode");
+            setIsApiConfigured(true);
+            
+            // Initialize with test credentials for web testing
+            await hyperliquidDataService.initialize({
+              apiKey: 'test-key',
+              apiSecret: 'test-secret',
+              walletAddress: '0x0000000000000000000000000000000000000000', // Test wallet address
+              onStatusChange: (status) => {
+                console.log(`Hyperliquid connection status: ${status}`);
+              }
+            });
+          }
         }
       } catch (error) {
         console.error("Failed to check API credentials:", error);
