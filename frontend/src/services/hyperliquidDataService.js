@@ -97,17 +97,12 @@ class HyperliquidDataService {
     // Update status to connecting
     this._updateStatus('connecting');
     
-    // Try the info endpoint first
+    // Try the info endpoint first with the correct format
     try {
-      console.log('Testing API connection with info endpoint...');
-      const response = await fetch(`${HYPERLIQUID_API_CONFIG.REST_API_URL}/info`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          type: 'meta'
-        })
+      console.log('Testing API connection with info/getMetaAndAssetCtxs endpoint...');
+      const response = await fetch(`${HYPERLIQUID_API_CONFIG.REST_API_URL}/info/getMetaAndAssetCtxs`, {
+        method: 'GET',
+        headers: HYPERLIQUID_API_CONFIG.DEFAULT_HEADERS
       });
       
       if (response.ok) {
@@ -115,12 +110,16 @@ class HyperliquidDataService {
         if (data && data.universe && data.universe.length > 0) {
           // Successfully connected to the API
           this._updateStatus('connected');
-          console.log('API connection test successful via info endpoint');
+          console.log('API connection test successful via info/getMetaAndAssetCtxs endpoint');
           return true;
+        } else {
+          console.warn('Received response from API but data format is unexpected:', data);
         }
+      } else {
+        console.warn(`API request failed with status: ${response.status}`);
       }
     } catch (error) {
-      console.error('Error connecting to API info endpoint:', error);
+      console.error('Error connecting to API info/getMetaAndAssetCtxs endpoint:', error);
     }
     
     // Try the exchange endpoint as fallback
@@ -138,7 +137,11 @@ class HyperliquidDataService {
           this._updateStatus('connected');
           console.log('API connection test successful via exchange endpoint');
           return true;
+        } else {
+          console.warn('Received response from exchange API but data is empty or invalid:', data);
         }
+      } else {
+        console.warn(`Exchange API request failed with status: ${response.status}`);
       }
     } catch (error) {
       console.error('Error connecting to API exchange endpoint:', error);
