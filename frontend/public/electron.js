@@ -276,7 +276,8 @@ function setupIpcHandlers() {
     try {
       store.set('hyperliquid.apiKey', credentials.apiKey);
       store.set('hyperliquid.apiSecret', credentials.apiSecret);
-      log.info('API credentials saved successfully');
+      store.set('hyperliquid.publicAddress', credentials.publicAddress);
+      log.info('API credentials and public address saved successfully');
       return { success: true };
     } catch (error) {
       log.error('Failed to save API credentials:', error);
@@ -289,7 +290,8 @@ function setupIpcHandlers() {
     try {
       const apiKey = store.get('hyperliquid.apiKey');
       const apiSecret = store.get('hyperliquid.apiSecret');
-      return { apiKey, apiSecret };
+      const publicAddress = store.get('hyperliquid.publicAddress');
+      return { apiKey, apiSecret, publicAddress };
     } catch (error) {
       log.error('Failed to retrieve API credentials:', error);
       return { error: error.message };
