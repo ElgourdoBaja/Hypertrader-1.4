@@ -19,8 +19,40 @@ load_dotenv(ROOT_DIR / '.env')
 
 # MongoDB connection
 mongo_url = os.environ.get('MONGO_URL')
-client = AsyncIOMotorClient(mongo_url)
-db = client['hyperliquid_trader']
+mock_mode = os.environ.get('MOCK_MODE', 'false').lower() == 'true'
+
+if mock_mode:
+    print("Running in MOCK MODE - using in-memory storage")
+    # Mock database for testing
+    mock_db = {
+        'status_checks': [],
+        'strategies': [],
+        'positions': [],
+        'trades': [],
+        'credentials': [],
+        'alerts': []
+    }
+    db = None
+    client = None
+else:
+    try:
+        client = AsyncIOMotorClient(mongo_url)
+        db = client['hyperliquid_trader']
+        print(f"Connected to MongoDB at {mongo_url}")
+    except Exception as e:
+        print(f"Failed to connect to MongoDB: {e}")
+        print("Falling back to MOCK MODE")
+        mock_mode = True
+        mock_db = {
+            'status_checks': [],
+            'strategies': [],
+            'positions': [],
+            'trades': [],
+            'credentials': [],
+            'alerts': []
+        }
+        db = None
+        client = None
 
 # Create the main app without a prefix
 app = FastAPI()
@@ -92,6 +124,89 @@ class PerformanceMetrics(BaseModel):
     sharpe_ratio: float
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
+
+# Mock database helper functions
+class MockCollection:
+    def __init__(self, collection_name):
+        self.collection_name = collection_name
+        
+    async def insert_one(self, document):
+        if mock_mode:
+            mock_db[self.collection_name].append(document)
+            return type('MockResult', (), {'inserted_id': document.get('id', str(uuid.uuid4()))})()
+        else:
+            return await getattr(db, self.collection_name).insert_one(document)
+    
+    async def find_one(self, query):
+        if mock_mode:
+            for doc in mock_db[self.collection_name]:
+                if all(doc.get(k) == v for k, v in query.items()):
+                    return doc
+            return None
+        else:
+            return await getattr(db, self.collection_name).find_one(query)
+    
+    def find(self, query=None):
+        if mock_mode:
+            if query is None:
+                return MockCursor(mock_db[self.collection_name])
+            else:
+                filtered = [doc for doc in mock_db[self.collection_name] 
+                           if all(doc.get(k) == v for k, v in query.items())]
+                return MockCursor(filtered)
+        else:
+            return getattr(db, self.collection_name).find(query or {})
+    
+    async def update_one(self, query, update):
+        if mock_mode:
+            for i, doc in enumerate(mock_db[self.collection_name]):
+                if all(doc.get(k) == v for k, v in query.items()):
+                    if '$set' in update:
+                        doc.update(update['$set'])
+                    return type('MockResult', (), {'modified_count': 1})()
+            return type('MockResult', (), {'modified_count': 0})()
+        else:
+            return await getattr(db, self.collection_name).update_one(query, update)
+    
+    async def delete_many(self, query):
+        if mock_mode:
+            original_count = len(mock_db[self.collection_name])
+            mock_db[self.collection_name] = [doc for doc in mock_db[self.collection_name] 
+                                           if not all(doc.get(k) == v for k, v in query.items())]
+            deleted_count = original_count - len(mock_db[self.collection_name])
+            return type('MockResult', (), {'deleted_count': deleted_count})()
+        else:
+            return await getattr(db, self.collection_name).delete_many(query)
+
+class MockCursor:
+    def __init__(self, data):
+        self.data = data
+    
+    async def to_list(self, length):
+        return self.data[:length] if length else self.data
+    
+    def sort(self, field, direction):
+        if field == "executed_at":
+            self.data.sort(key=lambda x: x.get(field, datetime.min), reverse=(direction == -1))
+        return self
+    
+    def limit(self, count):
+        self.data = self.data[:count]
+        return self
+
+# Create mock collections
+if mock_mode or db is None:
+    class MockDB:
+        def __init__(self):
+            self.status_checks = MockCollection('status_checks')
+            self.strategies = MockCollection('strategies')
+            self.positions = MockCollection('positions')
+            self.trades = MockCollection('trades')
+            self.credentials = MockCollection('credentials')
+            self.alerts = MockCollection('alerts')
+    
+    if db is None:
+        db = MockDB()
 
 # Trading engine state
 trading_is_active = False
@@ -263,6 +378,74 @@ async def get_market_symbols():
     
     return {"symbols": symbols}
 
+# Analysis endpoints
+@api_router.get("/analysis/chart")
+async def get_chart_data(symbol: str, timeframe: str):
+    # Mock chart data
+    import random
+    data = []
+    base_price = 50000 if "BTC" in symbol else 3000
+    
+    for i in range(100):
+        price = base_price + random.randint(-1000, 1000)
+        data.append({
+            "time": int(time.time()) - (100 - i) * 60,
+            "open": price,
+            "high": price + random.randint(0, 100),
+            "low": price - random.randint(0, 100),
+            "close": price + random.randint(-50, 50),
+            "volume": random.randint(1000, 10000)
+        })
+    
+    return {"symbol": symbol, "timeframe": timeframe, "data": data}
+
+@api_router.get("/analysis/indicators")
+async def get_technical_indicators(symbol: str, timeframe: str):
+    # Mock technical indicators
+    import random
+    return {
+        "symbol": symbol,
+        "timeframe": timeframe,
+        "indicators": {
+            "rsi": random.uniform(30, 70),
+            "macd": random.uniform(-1, 1),
+            "bollinger_upper": random.uniform(51000, 52000),
+            "bollinger_lower": random.uniform(49000, 50000),
+            "sma_20": random.uniform(49500, 50500),
+            "ema_12": random.uniform(49800, 50200)
+        }
+    }
+
+# Alert endpoints
+@api_router.post("/alerts", status_code=201)
+async def create_alert(alert_data: dict):
+    alert_id = str(uuid.uuid4())
+    alert = {
+        "id": alert_id,
+        "created_at": datetime.utcnow(),
+        **alert_data
+    }
+    await db.alerts.insert_one(alert)
+    return alert
+
+@api_router.get("/alerts")
+async def get_alerts():
+    alerts = await db.alerts.find().to_list(1000)
+    return alerts
+
+@api_router.put("/alerts/{alert_id}")
+async def update_alert(alert_id: str, alert_data: dict):
+    await db.alerts.update_one(
+        {"id": alert_id},
+        {"$set": {**alert_data, "updated_at": datetime.utcnow()}}
+    )
+    return {"message": f"Alert {alert_id} updated successfully"}
+
+@api_router.delete("/alerts/{alert_id}")
+async def delete_alert(alert_id: str):
+    await db.alerts.delete_many({"id": alert_id})
+    return {"message": f"Alert {alert_id} deleted successfully"}
+
 # Background trading task
 async def trading_background_task():
     global trading_is_active
@@ -305,4 +488,5 @@ logger = logging.getLogger(__name__)
 async def shutdown_db_client():
     global trading_is_active
     trading_is_active = False
-    client.close()
+    if client is not None:
+        client.close()
